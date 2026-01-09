@@ -1,0 +1,220 @@
+<?php
+/**
+ * Email handling class.
+ *
+ * @package Member_Registration_Plugin
+ * @subpackage Member_Registration_Plugin/includes
+ * @since 1.0.0
+ */
+
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
+
+/**
+ * Class Mbrreg_Email
+ *
+ * Handles email sending for the plugin.
+ *
+ * @since 1.0.0
+ */
+class Mbrreg_Email {
+
+	/**
+	 * Send activation email to new member.
+	 *
+	 * @since 1.0.0
+	 * @param int    $user_id        WordPress user ID.
+	 * @param string $activation_key Activation key.
+	 * @return bool Whether the email was sent successfully.
+	 */
+	public function send_activation_email( $user_id, $activation_key ) {
+		$user = get_user_by( 'ID', $user_id );
+
+		if ( ! $user ) {
+			return false;
+		}
+
+		$activation_url = add_query_arg(
+			array(
+				'mbrreg_action' => 'activate',
+				'key'           => $activation_key,
+			),
+			home_url( '/' )
+		);
+
+		$subject = sprintf(
+			/* translators: %s: Site name */
+			__( 'Activate your membership at %s', 'member-registration-plugin' ),
+			get_bloginfo( 'name' )
+		);
+
+		$message = sprintf(
+			/* translators: 1: User display name, 2: Site name, 3: Activation URL */
+			__(
+				'Hello %1$s,
+
+Thank you for registering as a member at %2$s.
+
+Please click the following link to activate your account:
+
+%3$s
+
+If you did not register for this account, please ignore this email.
+
+Best regards,
+%2$s',
+				'member-registration-plugin'
+			),
+			$user->display_name,
+			get_bloginfo( 'name' ),
+			$activation_url
+		);
+
+		$headers = $this->get_email_headers();
+
+		/**
+		 * Filter the activation email subject.
+		 *
+		 * @since 1.0.0
+		 * @param string  $subject Subject line.
+		 * @param WP_User $user    User object.
+		 */
+		$subject = apply_filters( 'mbrreg_activation_email_subject', $subject, $user );
+
+		/**
+		 * Filter the activation email message.
+		 *
+		 * @since 1.0.0
+		 * @param string  $message        Email message.
+		 * @param WP_User $user           User object.
+		 * @param string  $activation_url Activation URL.
+		 */
+		$message = apply_filters( 'mbrreg_activation_email_message', $message, $user, $activation_url );
+
+		return wp_mail( $user->user_email, $subject, $message, $headers );
+	}
+
+	/**
+	 * Send notification to admin about new registration.
+	 *
+	 * @since 1.0.0
+	 * @param int   $member_id Member ID.
+	 * @param array $data      Member data.
+	 * @return bool Whether the email was sent successfully.
+	 */
+	public function send_admin_notification( $member_id, $data ) {
+		$admin_email = get_option( 'admin_email' );
+
+		$subject = sprintf(
+			/* translators: %s: Site name */
+			__( 'New member registration at %s', 'member-registration-plugin' ),
+			get_bloginfo( 'name' )
+		);
+
+		$message = sprintf(
+			/* translators: 1: Username, 2: Email */
+			__(
+				'A new member has registered:
+
+Username: %1$s
+Email: %2$s
+
+You can view and manage members in the WordPress admin area.',
+				'member-registration-plugin'
+			),
+			isset( $data['username'] ) ? $data['username'] : '',
+			isset( $data['email'] ) ? $data['email'] : ''
+		);
+
+		$headers = $this->get_email_headers();
+
+		return wp_mail( $admin_email, $subject, $message, $headers );
+	}
+
+	/**
+	 * Send welcome email after account activation.
+	 *
+	 * @since 1.0.0
+	 * @param int $user_id WordPress user ID.
+	 * @return bool Whether the email was sent successfully.
+	 */
+	public function send_welcome_email( $user_id ) {
+		$user = get_user_by( 'ID', $user_id );
+
+		if ( ! $user ) {
+			return false;
+		}
+
+		$subject = sprintf(
+			/* translators: %s: Site name */
+			__( 'Welcome to %s!', 'member-registration-plugin' ),
+			get_bloginfo( 'name' )
+		);
+
+		$message = sprintf(
+			/* translators: 1: User display name, 2: Site name, 3: Login URL */
+			__(
+				'Hello %1$s,
+
+Your account at %2$s has been activated successfully!
+
+You can now log in at: %3$s
+
+Best regards,
+%2$s',
+				'member-registration-plugin'
+			),
+			$user->display_name,
+			get_bloginfo( 'name' ),
+			wp_login_url()
+		);
+
+		$headers = $this->get_email_headers();
+
+		/**
+		 * Filter the welcome email subject.
+		 *
+		 * @since 1.0.0
+		 * @param string  $subject Subject line.
+		 * @param WP_User $user    User object.
+		 */
+		$subject = apply_filters( 'mbrreg_welcome_email_subject', $subject, $user );
+
+		/**
+		 * Filter the welcome email message.
+		 *
+		 * @since 1.0.0
+		 * @param string  $message Email message.
+		 * @param WP_User $user    User object.
+		 */
+		$message = apply_filters( 'mbrreg_welcome_email_message', $message, $user );
+
+		return wp_mail( $user->user_email, $subject, $message, $headers );
+	}
+
+	/**
+	 * Get email headers.
+	 *
+	 * @since 1.0.0
+	 * @return array Email headers.
+	 */
+	private function get_email_headers() {
+		$from_name    = get_option( 'mbrreg_email_from_name', get_bloginfo( 'name' ) );
+		$from_address = get_option( 'mbrreg_email_from_address', get_option( 'admin_email' ) );
+
+		$headers = array(
+			'Content-Type: text/plain; charset=UTF-8',
+			sprintf( 'From: %s <%s>', $from_name, $from_address ),
+		);
+
+		/**
+		 * Filter email headers.
+		 *
+		 * @since 1.0.0
+		 * @param array $headers Email headers.
+		 */
+		return apply_filters( 'mbrreg_email_headers', $headers );
+	}
+}

@@ -1,0 +1,346 @@
+/**
+ * Public styles for Member Registration Plugin.
+ *
+ * @package Member_Registration_Plugin
+ * @since 1.0.0
+ */
+
+/* Container Styles */
+.mbrreg-auth-container,
+.mbrreg-dashboard-container,
+.mbrreg-form-container {
+	max-width: 600px;
+	margin: 0 auto;
+	padding: 20px;
+}
+
+/* Tab Styles */
+.mbrreg-tabs {
+	display: flex;
+	border-bottom: 2px solid #ddd;
+	margin-bottom: 20px;
+}
+
+.mbrreg-tab {
+	padding: 12px 24px;
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 16px;
+	font-weight: 500;
+	color: #666;
+	border-bottom: 2px solid transparent;
+	margin-bottom: -2px;
+	transition: all 0.3s ease;
+}
+
+.mbrreg-tab:hover {
+	color: #333;
+}
+
+.mbrreg-tab-active {
+	color: #0073aa;
+	border-bottom-color: #0073aa;
+}
+
+.mbrreg-tab-content {
+	display: none;
+}
+
+.mbrreg-tab-content-active {
+	display: block;
+}
+
+/* Form Styles */
+.mbrreg-form {
+	background: #fff;
+	padding: 30px;
+	border-radius: 4px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.mbrreg-form-title {
+	margin: 0 0 25px;
+	padding-bottom: 15px;
+	border-bottom: 1px solid #eee;
+	font-size: 24px;
+	color: #333;
+}
+
+.mbrreg-fieldset {
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	padding: 20px;
+	margin-bottom: 25px;
+}
+
+.mbrreg-fieldset legend {
+	padding: 0 10px;
+	font-weight: 600;
+	color: #333;
+}
+
+.mbrreg-form-row {
+	margin-bottom: 20px;
+}
+
+.mbrreg-form-row label {
+	display: block;
+	margin-bottom: 8px;
+	font-weight: 500;
+	color: #333;
+}
+
+.mbrreg-form-row input[type="text"],
+.mbrreg-form-row input[type="email"],
+.mbrreg-form-row input[type="password"],
+.mbrreg-form-row input[type="tel"],
+.mbrreg-form-row input[type="date"],
+.mbrreg-form-row input[type="number"],
+.mbrreg-form-row textarea,
+.mbrreg-form-row select {
+	width: 100%;
+	padding: 12px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	font-size: 16px;
+	transition: border-color 0.3s ease;
+}
+
+.mbrreg-form-row input:focus,
+.mbrreg-form-row textarea:focus,
+.mbrreg-form-row select:focus {
+	outline: none;
+	border-color: #0073aa;
+	box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.1);
+}
+
+.mbrreg-form-row input:disabled {
+	background-color: #f5f5f5;
+	cursor: not-allowed;
+}
+
+.mbrreg-checkbox-row label {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-weight: normal;
+}
+
+.mbrreg-radio-label {
+	display: block;
+	margin-bottom: 8px;
+	font-weight: normal;
+}
+
+.required {
+	color: #dc3545;
+}
+
+.mbrreg-field-note {
+	display: block;
+	margin-top: 5px;
+	font-size: 13px;
+	color: #666;
+}
+
+/* Button Styles */
+.mbrreg-button {
+	display: inline-block;
+	padding: 12px 24px;
+	border: none;
+	border-radius: 4px;
+	font-size: 16px;
+	font-weight: 500;
+	cursor: pointer;
+	text-decoration: none;
+	transition: all 0.3s ease;
+}
+
+.mbrreg-button-primary {
+	background-color: #0073aa;
+	color: #fff;
+}
+
+.mbrreg-button-primary:hover {
+	background-color: #005a87;
+	color: #fff;
+}
+
+.mbrreg-button-secondary {
+	background-color: #f0f0f0;
+	color: #333;
+}
+
+.mbrreg-button-secondary:hover {
+	background-color: #e0e0e0;
+}
+
+.mbrreg-button-danger {
+	background-color: #dc3545;
+	color: #fff;
+}
+
+.mbrreg-button-danger:hover {
+	background-color: #c82333;
+}
+
+.mbrreg-button:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+/* Message Styles */
+.mbrreg-message {
+	padding: 12px 15px;
+	border-radius: 4px;
+	margin-bottom: 20px;
+}
+
+.mbrreg-success {
+	background-color: #d4edda;
+	color: #155724;
+	border: 1px solid #c3e6cb;
+}
+
+.mbrreg-error {
+	background-color: #f8d7da;
+	color: #721c24;
+	border: 1px solid #f5c6cb;
+}
+
+.mbrreg-warning {
+	background-color: #fff3cd;
+	color: #856404;
+	border: 1px solid #ffeeba;
+}
+
+.mbrreg-info {
+	background-color: #d1ecf1;
+	color: #0c5460;
+	border: 1px solid #bee5eb;
+}
+
+.mbrreg-form-messages:empty {
+	display: none;
+}
+
+/* Form Links */
+.mbrreg-form-links {
+	margin-top: 20px;
+	text-align: center;
+}
+
+.mbrreg-form-links a {
+	color: #0073aa;
+	text-decoration: none;
+}
+
+.mbrreg-form-links a:hover {
+	text-decoration: underline;
+}
+
+/* Dashboard Styles */
+.mbrreg-dashboard-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20px;
+	flex-wrap: wrap;
+	gap: 15px;
+}
+
+.mbrreg-dashboard-header h2 {
+	margin: 0;
+}
+
+.mbrreg-dashboard-actions {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.mbrreg-dashboard-status {
+	margin-bottom: 20px;
+}
+
+/* Status Badges */
+.mbrreg-status {
+	display: inline-block;
+	padding: 5px 12px;
+	border-radius: 15px;
+	font-size: 13px;
+	font-weight: 600;
+	text-transform: uppercase;
+}
+
+.mbrreg-status-active {
+	background-color: #d4edda;
+	color: #155724;
+}
+
+.mbrreg-status-inactive {
+	background-color: #f8d7da;
+	color: #721c24;
+}
+
+.mbrreg-status-pending {
+	background-color: #fff3cd;
+	color: #856404;
+}
+
+/* Cancel Membership Section */
+.mbrreg-cancel-membership {
+	margin-top: 40px;
+	padding-top: 20px;
+	border-top: 2px solid #f0f0f0;
+}
+
+.mbrreg-cancel-membership h4 {
+	margin-bottom: 10px;
+	color: #dc3545;
+}
+
+.mbrreg-cancel-membership p {
+	margin-bottom: 15px;
+	color: #666;
+}
+
+/* Form Actions */
+.mbrreg-form-actions {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+/* Responsive Styles */
+@media screen and (max-width: 600px) {
+	.mbrreg-auth-container,
+	.mbrreg-dashboard-container,
+	.mbrreg-form-container {
+		padding: 10px;
+	}
+
+	.mbrreg-form {
+		padding: 20px 15px;
+	}
+
+	.mbrreg-tab {
+		padding: 10px 16px;
+		font-size: 14px;
+	}
+
+	.mbrreg-dashboard-header {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.mbrreg-form-actions {
+		flex-direction: column;
+	}
+
+	.mbrreg-button {
+		width: 100%;
+		text-align: center;
+	}
+}
