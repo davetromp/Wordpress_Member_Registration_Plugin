@@ -1,2 +1,2 @@
-# Wordpress_Member_Registration_Plugin
+# Wordpress Member Registration Plugin
 A WordPress plugin for Member registration
