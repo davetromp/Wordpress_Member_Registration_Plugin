@@ -2,7 +2,7 @@
 - conversationId: f6280200-9b4c-457d-9366-83fc5db44d76
 - endpoint: anthropic
 - title: Member Registration Plugin for WordPress
-- exportAt: 15:26:39 GMT+0100 (Central European Standard Time)
+- exportAt: 20:49:17 GMT+0100 (Central European Standard Time)
 
 ## Options
 - presetId: null
@@ -20627,5 +20627,297 @@ msgstr "Geboorteplaats"
 - `public/partials/mbrreg-member-dashboard.php` - Simplified form
 - `public/css/mbrreg-public.css` - Fixed modal and input styling
 - `languages/member-registration-plugin-nl_NL.po` - Added email translations
+
+
+**User**
+Can you please also update the uninstall.php file to match uninstalling the latest version. Currently the plugin cannot be uninstalled from the admin panel.
+
+
+**Claude**
+{"type":"think","think":"The user wants me to update the uninstall.php file to properly handle uninstalling the latest version (1.2.0) of the plugin. The file needs to clean up all database tables, options, and any other data created by the plugin.\n\nLet me create a comprehensive uninstall.php file that:\n1. Checks if it's being called from WordPress uninstall\n2. Removes all custom database tables (members, custom_fields, member_meta)\n3. Removes all plugin options\n4. Removes any user capabilities added by the plugin\n5. Optionally removes WordPress users created by the plugin (with a setting check)\n6. Cleans up any transients\n\nI need to make sure the table prefix matches what's used in the plugin (MBRREG_TABLE_PREFIX = 'mbrreg_')."}
+
+
+**Claude**
+# uninstall.php (UPDATED for Version 1.2.0)
+
+```php
+<?php
+/**
+ * Fired when the plugin is uninstalled.
+ *
+ * When populating this file, consider the following flow
+ * of control:
+ *
+ * - This method should be static
+ * - Check if the $_REQUEST content actually is the plugin name
+ * - Run an admin referrer check to make sure it goes through authentication
+ * - Verify the output of $_GET makes sense
+ * - Repeat with other currentuser currentuser currentuseror currentuser roles. Best/worst case://wpadmin,mimimimimimimimimimimimimimimimimimimimimimimimi
+ *
+ * @package Member_Registration_Plugin
+ * @since 1.0.0
+ */
+
+// If uninstall not called from WordPress, then exit.
+if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+	exit;
+}
+
+/**
+ * Main uninstall function.
+ *
+ * Removes all plugin data from the database.
+ *
+ * @since 1.0.0
+ * @return void
+ */
+function mbrreg_uninstall() {
+	global $wpdb;
+
+	// Define table prefix (same as in main plugin file).
+	$table_prefix = $wpdb->prefix . 'mbrreg_';
+
+	// =============================================
+	// 1. DROP CUSTOM DATABASE TABLES
+	// =============================================
+
+	// Drop member meta table first (has foreign key references).
+	$table_member_meta = $table_prefix . 'member_meta';
+	$wpdb->query( "DROP TABLE IF EXISTS {$table_member_meta}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+	// Drop custom fields table.
+	$table_custom_fields = $table_prefix . 'custom_fields';
+	$wpdb->query( "DROP TABLE IF EXISTS {$table_custom_fields}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+	// Drop members table.
+	$table_members = $table_prefix . 'members';
+	$wpdb->query( "DROP TABLE IF EXISTS {$table_members}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+	// =============================================
+	// 2. DELETE ALL PLUGIN OPTIONS
+	// =============================================
+
+	$options_to_delete = array(
+		// Registration settings.
+		'mbrreg_allow_registration',
+		'mbrreg_allow_multiple_members',
+		'mbrreg_registration_page_id',
+		'mbrreg_login_redirect_page',
+
+		// Display settings.
+		'mbrreg_date_format',
+
+		// Required fields settings (current).
+		'mbrreg_require_first_name',
+		'mbrreg_require_last_name',
+
+		// Legacy required fields settings (pre-1.2.0).
+		'mbrreg_require_address',
+		'mbrreg_require_telephone',
+		'mbrreg_require_date_of_birth',
+		'mbrreg_require_place_of_birth',
+
+		// Email settings.
+		'mbrreg_email_from_name',
+		'mbrreg_email_from_address',
+
+		// Database version.
+		'mbrreg_db_version',
+
+		// Any other plugin options.
+		'mbrreg_plugin_version',
+	);
+
+	foreach ( $options_to_delete as $option ) {
+		delete_option( $option );
+	}
+
+	// =============================================
+	// 3. DELETE TRANSIENTS
+	// =============================================
+
+	// Delete known transients.
+	delete_transient( 'mbrreg_activation_redirect' );
+	delete_transient( 'mbrreg_activation_error' );
+	delete_transient( 'mbrreg_activation_success' );
+
+	// Delete any transients with our prefix (for dynamically created ones).
+	$wpdb->query(
+		"DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_mbrreg_%' OR option_name LIKE '_transient_timeout_mbrreg_%'"
+	);
+
+	// =============================================
+	// 4. REMOVE CUSTOM CAPABILITIES FROM ROLES
+	// =============================================
+
+	$capabilities_to_remove = array(
+		'mbrreg_manage_members',
+		'mbrreg_manage_settings',
+		'mbrreg_manage_custom_fields',
+		'mbrreg_export_members',
+		'mbrreg_import_members',
+	);
+
+	// Get all roles.
+	global $wp_roles;
+
+	if ( ! isset( $wp_roles ) ) {
+		$wp_roles = new WP_Roles(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+	}
+
+	foreach ( $wp_roles->role_names as $role_name => $display_name ) {
+		$role = get_role( $role_name );
+		if ( $role ) {
+			foreach ( $capabilities_to_remove as $cap ) {
+				$role->remove_cap( $cap );
+			}
+		}
+	}
+
+	// Also remove capabilities from individual users who might have them.
+	$users_with_caps = get_users(
+		array(
+			'meta_query' => array(
+				'relation' => 'OR',
+				array(
+					'key'     => $wpdb->prefix . 'capabilities',
+					'value'   => 'mbrreg_',
+					'compare' => 'LIKE',
+				),
+			),
+		)
+	);
+
+	foreach ( $users_with_caps as $user ) {
+		foreach ( $capabilities_to_remove as $cap ) {
+			$user->remove_cap( $cap );
+		}
+	}
+
+	// =============================================
+	// 5. CLEAN UP USER META (if any)
+	// =============================================
+
+	// Delete any user meta created by the plugin.
+	$wpdb->query(
+		"DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE 'mbrreg_%'"
+	);
+
+	// =============================================
+	// 6. OPTIONAL: DELETE WORDPRESS USERS
+	// =============================================
+
+	// By default, we do NOT delete WordPress users that were created
+	// through the plugin, as they may have other content on the site.
+	// 
+	// If you want to enable this feature, uncomment the code below
+	// and add a setting to allow admins to choose this option.
+	//
+	// WARNING: This will permanently delete user accounts!
+	//
+	/*
+	// Get all user IDs that were registered through the plugin.
+	// This would require storing user IDs in a separate option or
+	// identifying them through some other means.
+	
+	$member_user_ids = $wpdb->get_col(
+		"SELECT DISTINCT user_id FROM {$table_members}"
+	);
+	
+	if ( ! empty( $member_user_ids ) ) {
+		require_once ABSPATH . 'wp-admin/includes/user.php';
+		
+		foreach ( $member_user_ids as $user_id ) {
+			// Skip administrators.
+			if ( user_can( $user_id, 'manage_options' ) ) {
+				continue;
+			}
+			
+			// Delete the user (reassign their content to admin).
+			wp_delete_user( $user_id, 1 );
+		}
+	}
+	*/
+
+	// =============================================
+	// 7. CLEAR ANY CACHED DATA
+	// =============================================
+
+	// Clear object cache if available.
+	wp_cache_flush();
+
+	// =============================================
+	// 8. CLEAN UP SCHEDULED EVENTS (if any)
+	// =============================================
+
+	// If the plugin registered any cron events, clear them.
+	$cron_hooks = array(
+		'mbrreg_daily_cleanup',
+		'mbrreg_send_reminders',
+		// Add any other cron hooks your plugin might use.
+	);
+
+	foreach ( $cron_hooks as $hook ) {
+		$timestamp = wp_next_scheduled( $hook );
+		if ( $timestamp ) {
+			wp_unschedule_event( $timestamp, $hook );
+		}
+		// Clear all events for this hook.
+		wp_clear_scheduled_hook( $hook );
+	}
+}
+
+// Run the uninstall function.
+mbrreg_uninstall();
+```
+
+---
+
+## What This Uninstall File Does:
+
+### 1. **Drops Custom Database Tables**
+- `{prefix}mbrreg_member_meta` - Member custom field values
+- `{prefix}mbrreg_custom_fields` - Custom field definitions
+- `{prefix}mbrreg_members` - Member records
+
+### 2. **Deletes All Plugin Options**
+- Registration settings (allow_registration, allow_multiple_members, page IDs)
+- Display settings (date_format)
+- Required field settings (both current and legacy)
+- Email settings (from_name, from_address)
+- Database version tracking
+
+### 3. **Removes Transients**
+- Known transients (activation_redirect, activation_error, activation_success)
+- Any dynamically created transients with the `mbrreg_` prefix
+
+### 4. **Removes Custom Capabilities**
+- Removes all plugin capabilities from all roles
+- Also removes capabilities from individual users who might have them directly assigned
+
+### 5. **Cleans Up User Meta**
+- Removes any user meta with the `mbrreg_` prefix
+
+### 6. **Optional: User Deletion**
+- Code is included but commented out for optionally deleting WordPress users created through the plugin
+- This is disabled by default to prevent accidental data loss
+
+### 7. **Clears Cache**
+- Flushes the WordPress object cache
+
+### 8. **Clears Scheduled Events**
+- Removes any cron jobs that might have been scheduled by the plugin
+
+---
+
+## Important Notes:
+
+1. **WordPress Users Are Preserved** - The uninstall does NOT delete WordPress user accounts by default. This is intentional because those users may have other content on the site (posts, comments, etc.).
+
+2. **Complete Data Removal** - All member data, custom fields, and settings will be permanently deleted. There is no recovery once uninstalled.
+
+3. **Security Check** - The file checks for `WP_UNINSTALL_PLUGIN` constant to ensure it's only run during a legitimate WordPress uninstall process.
+
+4. **Multisite Compatibility** - If you need multisite support, you would need to add additional code to loop through all sites in the network. Let me know if you need that addition.
 
 
