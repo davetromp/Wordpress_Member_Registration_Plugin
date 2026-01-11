@@ -1,9 +1,10 @@
-=== Member Registration Plugin ===
-Contributors: Dave Tromp
-Tags: members, registration, membership, sports club, user management
+=== Member Registration ===
+Contributors: dtntmedia
+Donate link: https://dtntmedia.com/donate
+Tags: members, registration, membership, user management
 Requires at least: 5.0
 Tested up to: 6.4
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -88,25 +89,6 @@ Yes! The plugin is fully translatable and includes a Dutch translation. You can 
 
 == Changelog ==
 
-= 1.1.0 =
-* Added: Support for multiple members per user account
-* Added: Admin-only custom fields
-* Added: CSV import with automatic activation emails
-* Added: CSV export functionality
-* Added: Custom modal dialogs (replacing JavaScript alerts)
-* Added: Dutch translation
-* Added: "My Memberships" menu item in WordPress admin for regular users
-* Fixed: Form submission now properly refreshes the page after success
-* Improved: Better handling of member deactivation when multiple members exist
-
-= 1.0.0 =
-* Initial release
-
-== Upgrade Notice ==
-
-= 1.1.0 =
-Major update with support for multiple members per account, CSV import/export, and admin-only fields. Database will be automatically updated upon activation.
-
 = 1.2.0 =
 Adjustments Made:
 1. Date Format Setting** - Added a new "Display Settings" section in settings with option to choose between European (DD/MM/YYYY) and US (MM/DD/YYYY) date formats. Helper functions `mbrreg_format_date()`, `mbrreg_parse_date()`, `mbrreg_get_date_format()`, and `mbrreg_get_date_placeholder()` handle date formatting throughout the plugin.
@@ -130,3 +112,22 @@ Files Changed:
 - `public/partials/mbrreg-member-dashboard.php` - Simplified form
 - `public/css/mbrreg-public.css` - Fixed modal and input styling
 - `languages/member-registration-plugin-nl_NL.po` - Added email translations
+
+= 1.1.0 =
+* Added: Support for multiple members per user account
+* Added: Admin-only custom fields
+* Added: CSV import with automatic activation emails
+* Added: CSV export functionality
+* Added: Custom modal dialogs (replacing JavaScript alerts)
+* Added: Dutch translation
+* Added: "My Memberships" menu item in WordPress admin for regular users
+* Fixed: Form submission now properly refreshes the page after success
+* Improved: Better handling of member deactivation when multiple members exist
+
+= 1.0.0 =
+* Initial release
+
+== Upgrade Notice ==
+
+= 1.1.0 =
+Major update with support for multiple members per account, CSV import/export, and admin-only fields. Database will be automatically updated upon activation.
