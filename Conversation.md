@@ -2,7 +2,7 @@
 - conversationId: f6280200-9b4c-457d-9366-83fc5db44d76
 - endpoint: anthropic
 - title: Member Registration Plugin for WordPress
-- exportAt: 15:42:40 GMT+0100 (Central European Standard Time)
+- exportAt: 15:26:39 GMT+0100 (Central European Standard Time)
 
 ## Options
 - presetId: null
@@ -6235,7 +6235,7 @@ if ( $delete_data ) {
 		$admin_role->remove_cap( 'mbrreg_manage_settings' );
 		$admin_role->remove_cap( 'mbrreg_manage_custom_fields' );
 		$admin_role->remove_cap( 'mbrreg_export_members
-```
+
 
 **User**
 The plugin works. Nice! I tested the plugin and I now have some additional requirements and features I want to be implemented. Also there is a small 'bug' that I want to be fixed.
@@ -15152,5 +15152,5480 @@ GPL-2.0+ - See LICENSE file for details.
 11. `README.md`
 
 **Note**: You'll also need to generate the `.mo` file from the `.po` file for the Dutch translation to work. You can do this with Poedit or the command-line tool `msgfmt`.
+
+
+**User**
+Version 1.1.0 was a big improvement.
+Here are just a few more adjustments and fixes that are needed to finish up this project.
+
+# Adjustments
+* Currently any date fields are setup with a US format, so mm/dd/yyyy. Please implement a setting that will allow to set dates in European format like so: dd/mm/yyyy. This goes for the backend and the display of dates in the frontend.
+* Please remove the following fields from the default fields:
+    - address
+    - phone number
+    - date of birth
+    - place of birth
+    So the only default / personal details are first name and last name.
+    If a club want to ask for more information like address, etc., then these fields can be configured as additional fields, which is already possible.
+* the emails that are send out, for example to activate the account, are only available in English. Please Make them multilingual as well like the rest of the plugin by adding the email text to the language files and also make the translation to Dutch.
+
+# Fixes
+* On a desktop screen the modals do not display in the center of the screen. Instead they appear on the left side of the screen. This may differ depending on where the application is embedded in the page. Also on mobile devices the modal is pushed to the left and depending on the screen size it does not cover the entire screen. The modal should cover the entire screen with the notification in the middle of the screen.
+* the input fields in the forms in the frontend do not fit the boxes that outline the forms. Please make them fit.
+
+
+**Claude**
+{"type":"think","think":"The user wants several adjustments and fixes to the Member Registration Plugin. Let me break down what needs to be done:\n\n## Adjustments:\n\n1. **Date format setting** - Add a setting to switch between US (mm/dd/yyyy) and European (dd/mm/yyyy) date formats. This affects:\n   - Admin settings page\n   - Database storage (should remain Y-m-d but display format changes)\n   - Frontend display\n   - Backend display\n   - Date input fields (HTML5 date inputs use Y-m-d format internally, so we need to handle display separately)\n\n2. **Remove default fields** - Remove these from the core member fields:\n   - address\n   - telephone\n   - date_of_birth\n   - place_of_birth\n   \n   Only keep first_name and last_name as default personal details.\n   \n   This affects:\n   - Database table structure (activator)\n   - Member class (register, update, validate methods)\n   - Database class (insert_member, get_member)\n   - All form templates (register, dashboard, admin edit)\n   - Settings page (remove required field options for these)\n   - Export/Import functionality\n   - Email templates\n\n3. **Multilingual emails** - Make email templates translatable:\n   - Add email text to language files\n   - Update email class to use __() for all strings\n   - Add Dutch translations for emails\n\n## Fixes:\n\n1. **Modal centering** - Fix CSS to properly center modals on all screen sizes:\n   - Use flexbox with proper centering\n   - Ensure it covers the entire viewport\n   - Fix mobile display\n\n2. **Input fields fitting forms** - Fix CSS for input fields in frontend forms to fit their containers properly\n\nLet me create the updated files:\n\n### Files to update:\n1. `includes/class-mbrreg-activator.php` - Update table schema, remove fields\n2. `includes/class-mbrreg-database.php` - Remove field references\n\n\n3. `includes/class-mbrreg-member.php` - Strip out field handling from registration, update, and validation logic\n4. `includes/class-mbrreg-email.php` - Implement translatable strings throughout email generation\n5. `includes/class-mbrreg-admin.php` - Introduce date format configuration option\n6. `admin/partials/mbrreg-admin-settings.php` - Add date format selector and eliminate field requirement toggles\n7. `admin/partials/mbrreg-admin-member-edit.php` - Eliminate removed fields and apply date format handling\n8. `admin/partials/mbrreg-admin-members.php` - Apply date format to member list display\n9. `admin/partials/mbrreg-admin-register.php` - Remove unnecessary fields from registration form and update styling\n10. `public/partials/mbrreg-public-register.php` - Strip removed fields and fix input field CSS\n11. `public/partials/mbrreg-public-dashboard.php` - Remove fields from member dashboard and apply date formatting\n12. `public/css/mbrreg-public.css` - Fix modal centering and input field width issues\n13. `languages/member-registration-nl_NL.po` - Add Dutch translations for email content\n\nI should also create a utility function for consistent date formatting across all templates and admin pages."}
+
+
+**Claude**
+# Member Registration Plugin - Version 1.2.0 Updates
+
+Here are all the files that need to be updated to implement your adjustments and fixes.
+
+---
+
+## member-registration-plugin.php (UPDATED)
+
+```php
+<?php
+/**
+ * Plugin Name: Member Registration Plugin
+ * Plugin URI: https://example.com/member-registration-plugin
+ * Description: A comprehensive member registration and management system for sports clubs. Allows users to register and manage multiple members (e.g., family members) under one account.
+ * Version: 1.2.0
+ * Author: Sports Club Developer
+ * Author URI: https://example.com
+ * License: GPL-2.0+
+ * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
+ * Text Domain: member-registration-plugin
+ * Domain Path: /languages
+ *
+ * @package Member_Registration_Plugin
+ */
+
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
+
+/**
+ * Current plugin version.
+ */
+define( 'MBRREG_VERSION', '1.2.0' );
+
+/**
+ * Plugin base path.
+ */
+define( 'MBRREG_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
+
+/**
+ * Plugin base URL.
+ */
+define( 'MBRREG_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+
+/**
+ * Plugin basename.
+ */
+define( 'MBRREG_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
+
+/**
+ * Database table prefix for this plugin.
+ */
+define( 'MBRREG_TABLE_PREFIX', 'mbrreg_' );
+
+/**
+ * The code that runs during plugin activation.
+ */
+function mbrreg_activate() {
+	require_once MBRREG_PLUGIN_PATH . 'includes/class-mbrreg-activator.php';
+	Mbrreg_Activator::activate();
+}
+
+/**
+ * The code that runs during plugin deactivation.
+ */
+function mbrreg_deactivate() {
+	require_once MBRREG_PLUGIN_PATH . 'includes/class-mbrreg-deactivator.php';
+	Mbrreg_Deactivator::deactivate();
+}
+
+register_activation_hook( __FILE__, 'mbrreg_activate' );
+register_deactivation_hook( __FILE__, 'mbrreg_deactivate' );
+
+/**
+ * Load required files.
+ */
+require_once MBRREG_PLUGIN_PATH . 'includes/class-mbrreg-database.php';
+require_once MBRREG_PLUGIN_PATH . 'includes/class-mbrreg-member.php';
+require_once MBRREG_PLUGIN_PATH . 'includes/class-mbrreg-custom-fields.php';
+require_once MBRREG_PLUGIN_PATH . 'includes/class-mbrreg-email.php';
+require_once MBRREG_PLUGIN_PATH . 'includes/class-mbrreg-ajax.php';
+require_once MBRREG_PLUGIN_PATH . 'includes/class-mbrreg-shortcodes.php';
+require_once MBRREG_PLUGIN_PATH . 'includes/class-mbrreg-admin.php';
+require_once MBRREG_PLUGIN_PATH . 'includes/class-mbrreg-public.php';
+
+/**
+ * Initialize the plugin.
+ *
+ * @since 1.0.0
+ * @return void
+ */
+function mbrreg_init() {
+	// Load text domain for translations.
+	load_plugin_textdomain(
+		'member-registration-plugin',
+		false,
+		dirname( MBRREG_PLUGIN_BASENAME ) . '/languages/'
+	);
+
+	// Initialize components.
+	$database      = new Mbrreg_Database();
+	$custom_fields = new Mbrreg_Custom_Fields();
+	$email         = new Mbrreg_Email();
+	$member        = new Mbrreg_Member( $database, $custom_fields, $email );
+	$ajax          = new Mbrreg_Ajax( $member, $custom_fields, $email );
+	$shortcodes    = new Mbrreg_Shortcodes( $member, $custom_fields );
+	$admin         = new Mbrreg_Admin( $member, $custom_fields, $email );
+	$public        = new Mbrreg_Public( $member );
+
+	// Initialize hooks.
+	$ajax->init();
+	$shortcodes->init();
+	$admin->init();
+	$public->init();
+}
+add_action( 'plugins_loaded', 'mbrreg_init' );
+
+/**
+ * Add menu item to WordPress admin bar and dashboard for members.
+ *
+ * @since 1.1.0
+ * @return void
+ */
+function mbrreg_add_member_menu() {
+	// Only for logged-in non-admin users.
+	if ( ! is_user_logged_in() || current_user_can( 'manage_options' ) ) {
+		return;
+	}
+
+	$page_id = get_option( 'mbrreg_registration_page_id', 0 );
+	if ( ! $page_id ) {
+		$page_id = get_option( 'mbrreg_login_redirect_page', 0 );
+	}
+
+	if ( ! $page_id ) {
+		return;
+	}
+
+	$page_url = get_permalink( $page_id );
+
+	// Add to admin menu.
+	add_menu_page(
+		__( 'My Memberships', 'member-registration-plugin' ),
+		__( 'My Memberships', 'member-registration-plugin' ),
+		'read',
+		'mbrreg-my-memberships',
+		function() use ( $page_url ) {
+			wp_safe_redirect( $page_url );
+			exit;
+		},
+		'dashicons-groups',
+		70
+	);
+}
+add_action( 'admin_menu', 'mbrreg_add_member_menu' );
+
+/**
+ * Redirect members from dashboard to member area.
+ *
+ * @since 1.1.0
+ * @return void
+ */
+function mbrreg_redirect_members_from_dashboard() {
+	global $pagenow;
+
+	// Only on dashboard and for non-admin users.
+	if ( 'index.php' !== $pagenow || ! is_admin() || current_user_can( 'manage_options' ) ) {
+		return;
+	}
+
+	// Check if user is a member.
+	$database = new Mbrreg_Database();
+	$members  = $database->get_members_by_user_id( get_current_user_id() );
+
+	if ( empty( $members ) ) {
+		return;
+	}
+
+	// Get redirect page.
+	$page_id = get_option( 'mbrreg_login_redirect_page', 0 );
+	if ( ! $page_id ) {
+		$page_id = get_option( 'mbrreg_registration_page_id', 0 );
+	}
+
+	if ( $page_id && isset( $_GET['mbrreg_stay'] ) === false ) {
+		wp_safe_redirect( get_permalink( $page_id ) );
+		exit;
+	}
+}
+add_action( 'admin_init', 'mbrreg_redirect_members_from_dashboard' );
+
+/**
+ * Get global database instance.
+ *
+ * @since 1.0.0
+ * @return Mbrreg_Database
+ */
+function mbrreg_get_database() {
+	static $database = null;
+	if ( null === $database ) {
+		$database = new Mbrreg_Database();
+	}
+	return $database;
+}
+
+/**
+ * Format a date according to plugin settings.
+ *
+ * @since 1.2.0
+ * @param string $date       Date in Y-m-d format or other parseable format.
+ * @param string $format     Optional. Override format. Default empty uses plugin setting.
+ * @param bool   $for_input  Optional. If true, returns format suitable for display near inputs.
+ * @return string Formatted date or empty string if invalid.
+ */
+function mbrreg_format_date( $date, $format = '', $for_input = false ) {
+	if ( empty( $date ) || '0000-00-00' === $date ) {
+		return '';
+	}
+
+	$timestamp = strtotime( $date );
+	if ( false === $timestamp ) {
+		return '';
+	}
+
+	if ( empty( $format ) ) {
+		$date_format = get_option( 'mbrreg_date_format', 'eu' );
+		if ( 'us' === $date_format ) {
+			$format = 'm/d/Y';
+		} else {
+			$format = 'd/m/Y';
+		}
+	}
+
+	return date_i18n( $format, $timestamp );
+}
+
+/**
+ * Parse a date from display format to database format (Y-m-d).
+ *
+ * @since 1.2.0
+ * @param string $date Date in display format.
+ * @return string Date in Y-m-d format or empty string if invalid.
+ */
+function mbrreg_parse_date( $date ) {
+	if ( empty( $date ) ) {
+		return '';
+	}
+
+	// If already in Y-m-d format (from HTML5 date input), return as is.
+	if ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
+		return $date;
+	}
+
+	$date_format = get_option( 'mbrreg_date_format', 'eu' );
+
+	// Try to parse based on setting.
+	if ( 'us' === $date_format ) {
+		// m/d/Y format.
+		$parsed = DateTime::createFromFormat( 'm/d/Y', $date );
+	} else {
+		// d/m/Y format.
+		$parsed = DateTime::createFromFormat( 'd/m/Y', $date );
+	}
+
+	if ( $parsed ) {
+		return $parsed->format( 'Y-m-d' );
+	}
+
+	// Fallback: try strtotime.
+	$timestamp = strtotime( $date );
+	if ( false !== $timestamp ) {
+		return date( 'Y-m-d', $timestamp );
+	}
+
+	return '';
+}
+
+/**
+ * Get the date format string for display.
+ *
+ * @since 1.2.0
+ * @return string Date format string (e.g., 'd/m/Y' or 'm/d/Y').
+ */
+function mbrreg_get_date_format() {
+	$date_format = get_option( 'mbrreg_date_format', 'eu' );
+	return 'us' === $date_format ? 'm/d/Y' : 'd/m/Y';
+}
+
+/**
+ * Get the date format placeholder for inputs.
+ *
+ * @since 1.2.0
+ * @return string Placeholder string (e.g., 'DD/MM/YYYY' or 'MM/DD/YYYY').
+ */
+function mbrreg_get_date_placeholder() {
+	$date_format = get_option( 'mbrreg_date_format', 'eu' );
+	return 'us' === $date_format ? 'MM/DD/YYYY' : 'DD/MM/YYYY';
+}
+```
+
+---
+
+## includes/class-mbrreg-activator.php (UPDATED)
+
+```php
+<?php
+/**
+ * Fired during plugin activation.
+ *
+ * @package Member_Registration_Plugin
+ * @subpackage Member_Registration_Plugin/includes
+ * @since 1.0.0
+ */
+
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
+
+/**
+ * Class Mbrreg_Activator
+ *
+ * This class defines all code necessary to run during the plugin's activation.
+ *
+ * @since 1.0.0
+ */
+class Mbrreg_Activator {
+
+	/**
+	 * Activate the plugin.
+	 *
+	 * Creates necessary database tables and sets default options.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public static function activate() {
+		self::create_tables();
+		self::set_default_options();
+		self::create_plugin_roles();
+		self::maybe_migrate_data();
+
+		// Set flag for activation redirect.
+		set_transient( 'mbrreg_activation_redirect', true, 30 );
+
+		// Flush rewrite rules.
+		flush_rewrite_rules();
+	}
+
+	/**
+	 * Create database tables.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	private static function create_tables() {
+		global $wpdb;
+
+		$charset_collate = $wpdb->get_charset_collate();
+		$table_prefix    = $wpdb->prefix . MBRREG_TABLE_PREFIX;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		// Members table - simplified to only first_name and last_name as default fields.
+		$table_members = $table_prefix . 'members';
+		$sql_members   = "CREATE TABLE {$table_members} (
+			id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+			user_id bigint(20) UNSIGNED NOT NULL,
+			first_name varchar(100) DEFAULT '' NOT NULL,
+			last_name varchar(100) DEFAULT '' NOT NULL,
+			status varchar(20) DEFAULT 'pending' NOT NULL,
+			is_admin tinyint(1) DEFAULT 0 NOT NULL,
+			activation_key varchar(100) DEFAULT '' NOT NULL,
+			created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+			updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+			PRIMARY KEY (id),
+			KEY user_id (user_id),
+			KEY status (status),
+			KEY is_admin (is_admin)
+		) {$charset_collate};";
+
+		dbDelta( $sql_members );
+
+		// Custom fields table.
+		$table_custom_fields = $table_prefix . 'custom_fields';
+		$sql_custom_fields   = "CREATE TABLE {$table_custom_fields} (
+			id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+			field_name varchar(100) NOT NULL,
+			field_label varchar(255) NOT NULL,
+			field_type varchar(50) DEFAULT 'text' NOT NULL,
+			field_options text DEFAULT '' NOT NULL,
+			is_required tinyint(1) DEFAULT 0 NOT NULL,
+			is_admin_only tinyint(1) DEFAULT 0 NOT NULL,
+			field_order int(11) DEFAULT 0 NOT NULL,
+			created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+			updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+			PRIMARY KEY (id),
+			UNIQUE KEY field_name (field_name)
+		) {$charset_collate};";
+
+		dbDelta( $sql_custom_fields );
+
+		// Member meta table for custom field values.
+		$table_member_meta = $table_prefix . 'member_meta';
+		$sql_member_meta   = "CREATE TABLE {$table_member_meta} (
+			id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+			member_id bigint(20) UNSIGNED NOT NULL,
+			field_id bigint(20) UNSIGNED NOT NULL,
+			meta_value longtext DEFAULT '' NOT NULL,
+			created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+			updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+			PRIMARY KEY (id),
+			UNIQUE KEY member_field (member_id, field_id),
+			KEY member_id (member_id),
+			KEY field_id (field_id)
+		) {$charset_collate};";
+
+		dbDelta( $sql_member_meta );
+
+		// Update database version.
+		update_option( 'mbrreg_db_version', MBRREG_VERSION );
+	}
+
+	/**
+	 * Set default plugin options.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	private static function set_default_options() {
+		$default_options = array(
+			'require_first_name'     => false,
+			'require_last_name'      => false,
+			'email_from_name'        => get_bloginfo( 'name' ),
+			'email_from_address'     => get_option( 'admin_email' ),
+			'registration_page_id'   => 0,
+			'login_redirect_page'    => 0,
+			'allow_registration'     => true,
+			'allow_multiple_members' => true,
+			'date_format'            => 'eu', // 'eu' for d/m/Y, 'us' for m/d/Y.
+		);
+
+		foreach ( $default_options as $key => $value ) {
+			if ( false === get_option( 'mbrreg_' . $key ) ) {
+				add_option( 'mbrreg_' . $key, $value );
+			}
+		}
+	}
+
+	/**
+	 * Create plugin-specific roles and capabilities.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	private static function create_plugin_roles() {
+		// Add capabilities to administrator role.
+		$admin_role = get_role( 'administrator' );
+
+		if ( $admin_role ) {
+			$admin_role->add_cap( 'mbrreg_manage_members' );
+			$admin_role->add_cap( 'mbrreg_manage_settings' );
+			$admin_role->add_cap( 'mbrreg_manage_custom_fields' );
+			$admin_role->add_cap( 'mbrreg_export_members' );
+			$admin_role->add_cap( 'mbrreg_import_members' );
+		}
+	}
+
+	/**
+	 * Migrate data from older versions if needed.
+	 *
+	 * @since 1.2.0
+	 * @return void
+	 */
+	private static function maybe_migrate_data() {
+		global $wpdb;
+
+		$current_version = get_option( 'mbrreg_db_version', '1.0.0' );
+		$table_members   = $wpdb->prefix . MBRREG_TABLE_PREFIX . 'members';
+
+		// Check if old columns exist and migrate data to custom fields.
+		if ( version_compare( $current_version, '1.2.0', '<' ) ) {
+			// Check if the old columns exist.
+			$columns = $wpdb->get_col( "DESCRIBE {$table_members}", 0 );
+
+			$old_fields = array( 'address', 'telephone', 'date_of_birth', 'place_of_birth' );
+			$fields_to_migrate = array_intersect( $old_fields, $columns );
+
+			if ( ! empty( $fields_to_migrate ) ) {
+				self::migrate_old_fields_to_custom_fields( $fields_to_migrate );
+			}
+		}
+	}
+
+	/**
+	 * Migrate old default fields to custom fields.
+	 *
+	 * @since 1.2.0
+	 * @param array $fields Fields to migrate.
+	 * @return void
+	 */
+	private static function migrate_old_fields_to_custom_fields( $fields ) {
+		global $wpdb;
+
+		$table_members       = $wpdb->prefix . MBRREG_TABLE_PREFIX . 'members';
+		$table_custom_fields = $wpdb->prefix . MBRREG_TABLE_PREFIX . 'custom_fields';
+		$table_member_meta   = $wpdb->prefix . MBRREG_TABLE_PREFIX . 'member_meta';
+
+		$field_config = array(
+			'address'        => array(
+				'label' => __( 'Address', 'member-registration-plugin' ),
+				'type'  => 'textarea',
+			),
+			'telephone'      => array(
+				'label' => __( 'Telephone', 'member-registration-plugin' ),
+				'type'  => 'text',
+			),
+			'date_of_birth'  => array(
+				'label' => __( 'Date of Birth', 'member-registration-plugin' ),
+				'type'  => 'date',
+			),
+			'place_of_birth' => array(
+				'label' => __( 'Place of Birth', 'member-registration-plugin' ),
+				'type'  => 'text',
+			),
+		);
+
+		foreach ( $fields as $field_name ) {
+			if ( ! isset( $field_config[ $field_name ] ) ) {
+				continue;
+			}
+
+			// Check if custom field already exists.
+			$existing = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT id FROM {$table_custom_fields} WHERE field_name = %s",
+					$field_name
+				)
+			);
+
+			if ( $existing ) {
+				continue;
+			}
+
+			// Create custom field.
+			$wpdb->insert(
+				$table_custom_fields,
+				array(
+					'field_name'    => $field_name,
+					'field_label'   => $field_config[ $field_name ]['label'],
+					'field_type'    => $field_config[ $field_name ]['type'],
+					'field_options' => '',
+					'is_required'   => get_option( 'mbrreg_require_' . $field_name, 0 ) ? 1 : 0,
+					'is_admin_only' => 0,
+					'field_order'   => 0,
+				),
+				array( '%s', '%s', '%s', '%s', '%d', '%d', '%d' )
+			);
+
+			$field_id = $wpdb->insert_id;
+
+			if ( $field_id ) {
+				// Migrate existing data.
+				$members = $wpdb->get_results(
+					"SELECT id, {$field_name} FROM {$table_members} WHERE {$field_name} IS NOT NULL AND {$field_name} != ''"
+				);
+
+				foreach ( $members as $member ) {
+					$wpdb->insert(
+						$table_member_meta,
+						array(
+							'member_id'  => $member->id,
+							'field_id'   => $field_id,
+							'meta_value' => $member->$field_name,
+						),
+						array( '%d', '%d', '%s' )
+					);
+				}
+			}
+		}
+
+		// Note: We don't drop the old columns to preserve data integrity.
+		// They can be removed manually after confirming migration success.
+	}
+}
+```
+
+---
+
+## includes/class-mbrreg-database.php (UPDATED)
+
+```php
+<?php
+/**
+ * Database operations class.
+ *
+ * @package Member_Registration_Plugin
+ * @subpackage Member_Registration_Plugin/includes
+ * @since 1.0.0
+ */
+
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
+
+/**
+ * Class Mbrreg_Database
+ *
+ * Handles all database operations for the plugin.
+ *
+ * @since 1.0.0
+ */
+class Mbrreg_Database {
+
+	/**
+	 * WordPress database object.
+	 *
+	 * @since 1.0.0
+	 * @var wpdb
+	 */
+	private $wpdb;
+
+	/**
+	 * Table prefix for plugin tables.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	private $table_prefix;
+
+	/**
+	 * Constructor.
+	 *
+	 * @since 1.0.0
+	 */
+	public function __construct() {
+		global $wpdb;
+		$this->wpdb         = $wpdb;
+		$this->table_prefix = $wpdb->prefix . MBRREG_TABLE_PREFIX;
+	}
+
+	/**
+	 * Get the members table name.
+	 *
+	 * @since 1.0.0
+	 * @return string
+	 */
+	public function get_members_table() {
+		return $this->table_prefix . 'members';
+	}
+
+	/**
+	 * Get the custom fields table name.
+	 *
+	 * @since 1.0.0
+	 * @return string
+	 */
+	public function get_custom_fields_table() {
+		return $this->table_prefix . 'custom_fields';
+	}
+
+	/**
+	 * Get the member meta table name.
+	 *
+	 * @since 1.0.0
+	 * @return string
+	 */
+	public function get_member_meta_table() {
+		return $this->table_prefix . 'member_meta';
+	}
+
+	/**
+	 * Insert a new member.
+	 *
+	 * @since 1.0.0
+	 * @param array $data Member data.
+	 * @return int|false The member ID on success, false on failure.
+	 */
+	public function insert_member( $data ) {
+		$defaults = array(
+			'user_id'        => 0,
+			'first_name'     => '',
+			'last_name'      => '',
+			'status'         => 'pending',
+			'is_admin'       => 0,
+			'activation_key' => '',
+		);
+
+		$data = wp_parse_args( $data, $defaults );
+
+		// Only use the fields that exist in the simplified table.
+		$insert_data = array(
+			'user_id'        => $data['user_id'],
+			'first_name'     => $data['first_name'],
+			'last_name'      => $data['last_name'],
+			'status'         => $data['status'],
+			'is_admin'       => $data['is_admin'],
+			'activation_key' => $data['activation_key'],
+		);
+
+		$result = $this->wpdb->insert(
+			$this->get_members_table(),
+			$insert_data,
+			array( '%d', '%s', '%s', '%s', '%d', '%s' )
+		);
+
+		if ( false === $result ) {
+			return false;
+		}
+
+		return $this->wpdb->insert_id;
+	}
+
+	/**
+	 * Update a member.
+	 *
+	 * @since 1.0.0
+	 * @param int   $member_id Member ID.
+	 * @param array $data      Member data to update.
+	 * @return bool True on success, false on failure.
+	 */
+	public function update_member( $member_id, $data ) {
+		// Filter out any fields that don't exist in the table.
+		$allowed_fields = array( 'first_name', 'last_name', 'status', 'is_admin', 'activation_key' );
+		$update_data    = array();
+
+		foreach ( $data as $key => $value ) {
+			if ( in_array( $key, $allowed_fields, true ) ) {
+				$update_data[ $key ] = $value;
+			}
+		}
+
+		if ( empty( $update_data ) ) {
+			return true;
+		}
+
+		$result = $this->wpdb->update(
+			$this->get_members_table(),
+			$update_data,
+			array( 'id' => $member_id ),
+			null,
+			array( '%d' )
+		);
+
+		return false !== $result;
+	}
+
+	/**
+	 * Delete a member.
+	 *
+	 * @since 1.0.0
+	 * @param int $member_id Member ID.
+	 * @return bool True on success, false on failure.
+	 */
+	public function delete_member( $member_id ) {
+		// Delete member meta first.
+		$this->wpdb->delete(
+			$this->get_member_meta_table(),
+			array( 'member_id' => $member_id ),
+			array( '%d' )
+		);
+
+		// Delete member.
+		$result = $this->wpdb->delete(
+			$this->get_members_table(),
+			array( 'id' => $member_id ),
+			array( '%d' )
+		);
+
+		return false !== $result;
+	}
+
+	/**
+	 * Get a member by ID.
+	 *
+	 * @since 1.0.0
+	 * @param int $member_id Member ID.
+	 * @return object|null Member object or null if not found.
+	 */
+	public function get_member( $member_id ) {
+		$sql = $this->wpdb->prepare(
+			"SELECT * FROM {$this->get_members_table()} WHERE id = %d",
+			$member_id
+		);
+
+		return $this->wpdb->get_row( $sql );
+	}
+
+	/**
+	 * Get a member by user ID (returns first member for backwards compatibility).
+	 *
+	 * @since 1.0.0
+	 * @param int $user_id WordPress user ID.
+	 * @return object|null Member object or null if not found.
+	 */
+	public function get_member_by_user_id( $user_id ) {
+		$sql = $this->wpdb->prepare(
+			"SELECT * FROM {$this->get_members_table()} WHERE user_id = %d ORDER BY id ASC LIMIT 1",
+			$user_id
+		);
+
+		return $this->wpdb->get_row( $sql );
+	}
+
+	/**
+	 * Get all members by user ID.
+	 *
+	 * @since 1.1.0
+	 * @param int $user_id WordPress user ID.
+	 * @return array Array of member objects.
+	 */
+	public function get_members_by_user_id( $user_id ) {
+		$sql = $this->wpdb->prepare(
+			"SELECT * FROM {$this->get_members_table()} WHERE user_id = %d ORDER BY id ASC",
+			$user_id
+		);
+
+		return $this->wpdb->get_results( $sql );
+	}
+
+	/**
+	 * Count members by user ID.
+	 *
+	 * @since 1.1.0
+	 * @param int    $user_id WordPress user ID.
+	 * @param string $status  Optional status filter.
+	 * @return int Number of members.
+	 */
+	public function count_members_by_user_id( $user_id, $status = '' ) {
+		$sql = $this->wpdb->prepare(
+			"SELECT COUNT(*) FROM {$this->get_members_table()} WHERE user_id = %d",
+			$user_id
+		);
+
+		if ( ! empty( $status ) ) {
+			$sql .= $this->wpdb->prepare( ' AND status = %s', $status );
+		}
+
+		return (int) $this->wpdb->get_var( $sql );
+	}
+
+	/**
+	 * Get a member by activation key.
+	 *
+	 * @since 1.0.0
+	 * @param string $activation_key Activation key.
+	 * @return object|null Member object or null if not found.
+	 */
+	public function get_member_by_activation_key( $activation_key ) {
+		$sql = $this->wpdb->prepare(
+			"SELECT * FROM {$this->get_members_table()} WHERE activation_key = %s",
+			$activation_key
+		);
+
+		return $this->wpdb->get_row( $sql );
+	}
+
+	/**
+	 * Get all members.
+	 *
+	 * @since 1.0.0
+	 * @param array $args Query arguments.
+	 * @return array Array of member objects.
+	 */
+	public function get_members( $args = array() ) {
+		$defaults = array(
+			'status'   => '',
+			'is_admin' => null,
+			'search'   => '',
+			'user_id'  => null,
+			'orderby'  => 'created_at',
+			'order'    => 'DESC',
+			'limit'    => -1,
+			'offset'   => 0,
+		);
+
+		$args = wp_parse_args( $args, $defaults );
+
+		$where_clauses = array( '1=1' );
+		$where_values  = array();
+
+		if ( ! empty( $args['status'] ) ) {
+			$where_clauses[] = 'status = %s';
+			$where_values[]  = $args['status'];
+		}
+
+		if ( null !== $args['is_admin'] ) {
+			$where_clauses[] = 'is_admin = %d';
+			$where_values[]  = (int) $args['is_admin'];
+		}
+
+		if ( null !== $args['user_id'] ) {
+			$where_clauses[] = 'user_id = %d';
+			$where_values[]  = (int) $args['user_id'];
+		}
+
+		if ( ! empty( $args['search'] ) ) {
+			$search_term     = '%' . $this->wpdb->esc_like( $args['search'] ) . '%';
+			$where_clauses[] = '(first_name LIKE %s OR last_name LIKE %s)';
+			$where_values[]  = $search_term;
+			$where_values[]  = $search_term;
+		}
+
+		$where_sql = implode( ' AND ', $where_clauses );
+
+		// Sanitize orderby.
+		$allowed_orderby = array( 'id', 'first_name', 'last_name', 'status', 'created_at', 'updated_at' );
+		$orderby         = in_array( $args['orderby'], $allowed_orderby, true ) ? $args['orderby'] : 'created_at';
+		$order           = 'ASC' === strtoupper( $args['order'] ) ? 'ASC' : 'DESC';
+
+		$sql = "SELECT * FROM {$this->get_members_table()} WHERE {$where_sql} ORDER BY {$orderby} {$order}";
+
+		if ( $args['limit'] > 0 ) {
+			$sql .= $this->wpdb->prepare( ' LIMIT %d OFFSET %d', $args['limit'], $args['offset'] );
+		}
+
+		if ( ! empty( $where_values ) ) {
+			$sql = $this->wpdb->prepare( $sql, $where_values ); // phpcs:ignore
+		}
+
+		return $this->wpdb->get_results( $sql );
+	}
+
+	/**
+	 * Count members.
+	 *
+	 * @since 1.0.0
+	 * @param array $args Query arguments.
+	 * @return int Number of members.
+	 */
+	public function count_members( $args = array() ) {
+		$defaults = array(
+			'status'   => '',
+			'is_admin' => null,
+			'search'   => '',
+			'user_id'  => null,
+		);
+
+		$args = wp_parse_args( $args, $defaults );
+
+		$where_clauses = array( '1=1' );
+		$where_values  = array();
+
+		if ( ! empty( $args['status'] ) ) {
+			$where_clauses[] = 'status = %s';
+			$where_values[]  = $args['status'];
+		}
+
+		if ( null !== $args['is_admin'] ) {
+			$where_clauses[] = 'is_admin = %d';
+			$where_values[]  = (int) $args['is_admin'];
+		}
+
+		if ( null !== $args['user_id'] ) {
+			$where_clauses[] = 'user_id = %d';
+			$where_values[]  = (int) $args['user_id'];
+		}
+
+		if ( ! empty( $args['search'] ) ) {
+			$search_term     = '%' . $this->wpdb->esc_like( $args['search'] ) . '%';
+			$where_clauses[] = '(first_name LIKE %s OR last_name LIKE %s)';
+			$where_values[]  = $search_term;
+			$where_values[]  = $search_term;
+		}
+
+		$where_sql = implode( ' AND ', $where_clauses );
+
+		$sql = "SELECT COUNT(*) FROM {$this->get_members_table()} WHERE {$where_sql}";
+
+		if ( ! empty( $where_values ) ) {
+			$sql = $this->wpdb->prepare( $sql, $where_values ); // phpcs:ignore
+		}
+
+		return (int) $this->wpdb->get_var( $sql );
+	}
+
+	/**
+	 * Insert member meta.
+	 *
+	 * @since 1.0.0
+	 * @param int    $member_id Member ID.
+	 * @param int    $field_id  Custom field ID.
+	 * @param string $value     Meta value.
+	 * @return int|false The meta ID on success, false on failure.
+	 */
+	public function insert_member_meta( $member_id, $field_id, $value ) {
+		$result = $this->wpdb->insert(
+			$this->get_member_meta_table(),
+			array(
+				'member_id'  => $member_id,
+				'field_id'   => $field_id,
+				'meta_value' => $value,
+			),
+			array( '%d', '%d', '%s' )
+		);
+
+		if ( false === $result ) {
+			return false;
+		}
+
+		return $this->wpdb->insert_id;
+	}
+
+	/**
+	 * Update member meta.
+	 *
+	 * @since 1.0.0
+	 * @param int    $member_id Member ID.
+	 * @param int    $field_id  Custom field ID.
+	 * @param string $value     Meta value.
+	 * @return bool True on success, false on failure.
+	 */
+	public function update_member_meta( $member_id, $field_id, $value ) {
+		// Check if meta exists.
+		$existing = $this->get_member_meta( $member_id, $field_id );
+
+		if ( null !== $existing ) {
+			$result = $this->wpdb->update(
+				$this->get_member_meta_table(),
+				array( 'meta_value' => $value ),
+				array(
+					'member_id' => $member_id,
+					'field_id'  => $field_id,
+				),
+				array( '%s' ),
+				array( '%d', '%d' )
+			);
+		} else {
+			$result = $this->insert_member_meta( $member_id, $field_id, $value );
+		}
+
+		return false !== $result;
+	}
+
+	/**
+	 * Get member meta.
+	 *
+	 * @since 1.0.0
+	 * @param int $member_id Member ID.
+	 * @param int $field_id  Custom field ID (optional).
+	 * @return mixed Single value, array of values, or null.
+	 */
+	public function get_member_meta( $member_id, $field_id = null ) {
+		if ( null !== $field_id ) {
+			$sql = $this->wpdb->prepare(
+				"SELECT meta_value FROM {$this->get_member_meta_table()} WHERE member_id = %d AND field_id = %d",
+				$member_id,
+				$field_id
+			);
+
+			return $this->wpdb->get_var( $sql );
+		}
+
+		$sql = $this->wpdb->prepare(
+			"SELECT field_id, meta_value FROM {$this->get_member_meta_table()} WHERE member_id = %d",
+			$member_id
+		);
+
+		$results = $this->wpdb->get_results( $sql );
+		$meta    = array();
+
+		foreach ( $results as $row ) {
+			$meta[ $row->field_id ] = $row->meta_value;
+		}
+
+		return $meta;
+	}
+
+	/**
+	 * Delete member meta.
+	 *
+	 * @since 1.0.0
+	 * @param int $member_id Member ID.
+	 * @param int $field_id  Custom field ID (optional).
+	 * @return bool True on success, false on failure.
+	 */
+	public function delete_member_meta( $member_id, $field_id = null ) {
+		$where        = array( 'member_id' => $member_id );
+		$where_format = array( '%d' );
+
+		if ( null !== $field_id ) {
+			$where['field_id'] = $field_id;
+			$where_format[]    = '%d';
+		}
+
+		$result = $this->wpdb->delete(
+			$this->get_member_meta_table(),
+			$where,
+			$where_format
+		);
+
+		return false !== $result;
+	}
+
+	/**
+	 * Insert a custom field.
+	 *
+	 * @since 1.0.0
+	 * @param array $data Field data.
+	 * @return int|false The field ID on success, false on failure.
+	 */
+	public function insert_custom_field( $data ) {
+		$defaults = array(
+			'field_name'    => '',
+			'field_label'   => '',
+			'field_type'    => 'text',
+			'field_options' => '',
+			'is_required'   => 0,
+			'is_admin_only' => 0,
+			'field_order'   => 0,
+		);
+
+		$data = wp_parse_args( $data, $defaults );
+
+		$result = $this->wpdb->insert(
+			$this->get_custom_fields_table(),
+			$data,
+			array( '%s', '%s', '%s', '%s', '%d', '%d', '%d' )
+		);
+
+		if ( false === $result ) {
+			return false;
+		}
+
+		return $this->wpdb->insert_id;
+	}
+
+	/**
+	 * Update a custom field.
+	 *
+	 * @since 1.0.0
+	 * @param int   $field_id Field ID.
+	 * @param array $data     Field data to update.
+	 * @return bool True on success, false on failure.
+	 */
+	public function update_custom_field( $field_id, $data ) {
+		$result = $this->wpdb->update(
+			$this->get_custom_fields_table(),
+			$data,
+			array( 'id' => $field_id ),
+			null,
+			array( '%d' )
+		);
+
+		return false !== $result;
+	}
+
+	/**
+	 * Delete a custom field.
+	 *
+	 * @since 1.0.0
+	 * @param int $field_id Field ID.
+	 * @return bool True on success, false on failure.
+	 */
+	public function delete_custom_field( $field_id ) {
+		// Delete associated member meta.
+		$this->wpdb->delete(
+			$this->get_member_meta_table(),
+			array( 'field_id' => $field_id ),
+			array( '%d' )
+		);
+
+		// Delete field.
+		$result = $this->wpdb->delete(
+			$this->get_custom_fields_table(),
+			array( 'id' => $field_id ),
+			array( '%d' )
+		);
+
+		return false !== $result;
+	}
+
+	/**
+	 * Get a custom field by ID.
+	 *
+	 * @since 1.0.0
+	 * @param int $field_id Field ID.
+	 * @return object|null Field object or null if not found.
+	 */
+	public function get_custom_field( $field_id ) {
+		$sql = $this->wpdb->prepare(
+			"SELECT * FROM {$this->get_custom_fields_table()} WHERE id = %d",
+			$field_id
+		);
+
+		return $this->wpdb->get_row( $sql );
+	}
+
+	/**
+	 * Get all custom fields.
+	 *
+	 * @since 1.0.0
+	 * @param bool $include_admin_only Whether to include admin-only fields.
+	 * @return array Array of field objects.
+	 */
+	public function get_custom_fields( $include_admin_only = true ) {
+		$sql = "SELECT * FROM {$this->get_custom_fields_table()}";
+
+		if ( ! $include_admin_only ) {
+			$sql .= ' WHERE is_admin_only = 0';
+		}
+
+		$sql .= ' ORDER BY field_order ASC, id ASC';
+
+		return $this->wpdb->get_results( $sql );
+	}
+
+	/**
+	 * Check if email exists for any user.
+	 *
+	 * @since 1.1.0
+	 * @param string $email Email address.
+	 * @return int|false User ID if exists, false otherwise.
+	 */
+	public function email_exists( $email ) {
+		return email_exists( $email );
+	}
+
+	/**
+	 * Get user by email.
+	 *
+	 * @since 1.1.0
+	 * @param string $email Email address.
+	 * @return WP_User|false User object if exists, false otherwise.
+	 */
+	public function get_user_by_email( $email ) {
+		return get_user_by( 'email', $email );
+	}
+}
+```
+
+---
+
+## includes/class-mbrreg-member.php (UPDATED)
+
+```php
+<?php
+/**
+ * Member operations class.
+ *
+ * @package Member_Registration_Plugin
+ * @subpackage Member_Registration_Plugin/includes
+ * @since 1.0.0
+ */
+
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
+
+/**
+ * Class Mbrreg_Member
+ *
+ * Handles member-related operations.
+ *
+ * @since 1.0.0
+ */
+class Mbrreg_Member {
+
+	/**
+	 * Database instance.
+	 *
+	 * @since 1.0.0
+	 * @var Mbrreg_Database
+	 */
+	private $database;
+
+	/**
+	 * Custom fields instance.
+	 *
+	 * @since 1.0.0
+	 * @var Mbrreg_Custom_Fields
+	 */
+	private $custom_fields;
+
+	/**
+	 * Email instance.
+	 *
+	 * @since 1.0.0
+	 * @var Mbrreg_Email
+	 */
+	private $email;
+
+	/**
+	 * Member statuses.
+	 *
+	 * @since 1.0.0
+	 * @var array
+	 */
+	public static $statuses = array(
+		'pending'  => 'Pending Activation',
+		'active'   => 'Active',
+		'inactive' => 'Inactive',
+	);
+
+	/**
+	 * Constructor.
+	 *
+	 * @since 1.0.0
+	 * @param Mbrreg_Database      $database      Database instance.
+	 * @param Mbrreg_Custom_Fields $custom_fields Custom fields instance.
+	 * @param Mbrreg_Email         $email         Email instance.
+	 */
+	public function __construct( Mbrreg_Database $database, Mbrreg_Custom_Fields $custom_fields, Mbrreg_Email $email ) {
+		$this->database      = $database;
+		$this->custom_fields = $custom_fields;
+		$this->email         = $email;
+	}
+
+	/**
+	 * Get translated statuses.
+	 *
+	 * @since 1.2.0
+	 * @return array
+	 */
+	public static function get_statuses() {
+		return array(
+			'pending'  => __( 'Pending Activation', 'member-registration-plugin' ),
+			'active'   => __( 'Active', 'member-registration-plugin' ),
+			'inactive' => __( 'Inactive', 'member-registration-plugin' ),
+		);
+	}
+
+	/**
+	 * Register a new member.
+	 *
+	 * @since 1.0.0
+	 * @param array $data      Registration data.
+	 * @param bool  $is_import Whether this is an import operation.
+	 * @return int|WP_Error Member ID on success, WP_Error on failure.
+	 */
+	public function register( $data, $is_import = false ) {
+		$user_id       = 0;
+		$is_new_user   = true;
+		$existing_user = null;
+
+		// Check if adding to existing logged-in user.
+		if ( isset( $data['add_to_existing_user'] ) && $data['add_to_existing_user'] && is_user_logged_in() ) {
+			$user_id     = get_current_user_id();
+			$is_new_user = false;
+		} elseif ( ! empty( $data['email'] ) ) {
+			// Check if user with this email already exists.
+			$existing_user = get_user_by( 'email', $data['email'] );
+
+			if ( $existing_user ) {
+				// Allow adding member to existing user if allowed.
+				if ( get_option( 'mbrreg_allow_multiple_members', true ) ) {
+					$user_id     = $existing_user->ID;
+					$is_new_user = false;
+				} else {
+					return new WP_Error( 'email_exists', __( 'This email address is already registered.', 'member-registration-plugin' ) );
+				}
+			}
+		}
+
+		// Validate required fields for new user.
+		if ( $is_new_user ) {
+			if ( empty( $data['username'] ) && empty( $data['email'] ) ) {
+				return new WP_Error( 'missing_credentials', __( 'Username or email is required.', 'member-registration-plugin' ) );
+			}
+
+			if ( empty( $data['email'] ) ) {
+				return new WP_Error( 'missing_email', __( 'Email address is required.', 'member-registration-plugin' ) );
+			}
+
+			// Validate email.
+			if ( ! is_email( $data['email'] ) ) {
+				return new WP_Error( 'invalid_email', __( 'Please enter a valid email address.', 'member-registration-plugin' ) );
+			}
+
+			// Generate username from email if not provided.
+			if ( empty( $data['username'] ) ) {
+				$data['username'] = $this->generate_username_from_email( $data['email'] );
+			}
+
+			// Check if username exists.
+			if ( username_exists( $data['username'] ) ) {
+				// Generate unique username.
+				$data['username'] = $this->generate_unique_username( $data['username'] );
+			}
+
+			// Generate password if not provided (for imports).
+			if ( empty( $data['password'] ) ) {
+				$data['password'] = wp_generate_password( 12, true );
+			}
+		}
+
+		// Validate required member fields.
+		$validation = $this->validate_member_data( $data );
+		if ( is_wp_error( $validation ) ) {
+			return $validation;
+		}
+
+		// Create WordPress user if needed.
+		if ( $is_new_user ) {
+			$user_id = wp_create_user(
+				sanitize_user( $data['username'] ),
+				$data['password'],
+				sanitize_email( $data['email'] )
+			);
+
+			if ( is_wp_error( $user_id ) ) {
+				return $user_id;
+			}
+		}
+
+		// Generate activation key.
+		$activation_key = wp_generate_password( 32, false );
+		$status         = 'pending';
+
+		// Prepare member data (simplified - only first_name and last_name).
+		$member_data = array(
+			'user_id'        => $user_id,
+			'first_name'     => isset( $data['first_name'] ) ? sanitize_text_field( $data['first_name'] ) : '',
+			'last_name'      => isset( $data['last_name'] ) ? sanitize_text_field( $data['last_name'] ) : '',
+			'status'         => $status,
+			'is_admin'       => 0,
+			'activation_key' => $activation_key,
+		);
+
+		// Insert member.
+		$member_id = $this->database->insert_member( $member_data );
+
+		if ( ! $member_id ) {
+			// Rollback: delete WordPress user only if we created it.
+			if ( $is_new_user ) {
+				wp_delete_user( $user_id );
+			}
+			return new WP_Error( 'insert_failed', __( 'Failed to create member record.', 'member-registration-plugin' ) );
+		}
+
+		// Save custom field values.
+		$this->save_custom_field_values( $member_id, $data );
+
+		// Send activation email.
+		if ( $is_import ) {
+			$this->email->send_import_activation_email( $user_id, $activation_key, $data );
+		} else {
+			$this->email->send_activation_email( $user_id, $activation_key );
+		}
+
+		/**
+		 * Fires after a new member is registered.
+		 *
+		 * @since 1.0.0
+		 * @param int   $member_id Member ID.
+		 * @param int   $user_id   WordPress user ID.
+		 * @param array $data      Registration data.
+		 */
+		do_action( 'mbrreg_member_registered', $member_id, $user_id, $data );
+
+		return $member_id;
+	}
+
+	/**
+	 * Generate username from email.
+	 *
+	 * @since 1.1.0
+	 * @param string $email Email address.
+	 * @return string Generated username.
+	 */
+	private function generate_username_from_email( $email ) {
+		$username = sanitize_user( current( explode( '@', $email ) ), true );
+		return $username;
+	}
+
+	/**
+	 * Generate unique username.
+	 *
+	 * @since 1.1.0
+	 * @param string $username Base username.
+	 * @return string Unique username.
+	 */
+	private function generate_unique_username( $username ) {
+		$original = $username;
+		$counter  = 1;
+
+		while ( username_exists( $username ) ) {
+			$username = $original . $counter;
+			++$counter;
+		}
+
+		return $username;
+	}
+
+	/**
+	 * Activate a member account.
+	 *
+	 * @since 1.0.0
+	 * @param string $activation_key Activation key.
+	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 */
+	public function activate( $activation_key ) {
+		if ( empty( $activation_key ) ) {
+			return new WP_Error( 'missing_key', __( 'Activation key is required.', 'member-registration-plugin' ) );
+		}
+
+		$member = $this->database->get_member_by_activation_key( $activation_key );
+
+		if ( ! $member ) {
+			return new WP_Error( 'invalid_key', __( 'Invalid activation key.', 'member-registration-plugin' ) );
+		}
+
+		if ( 'active' === $member->status ) {
+			return new WP_Error( 'already_active', __( 'This account is already activated.', 'member-registration-plugin' ) );
+		}
+
+		// Update member status.
+		$result = $this->database->update_member(
+			$member->id,
+			array(
+				'status'         => 'active',
+				'activation_key' => '',
+			)
+		);
+
+		if ( ! $result ) {
+			return new WP_Error( 'update_failed', __( 'Failed to activate account.', 'member-registration-plugin' ) );
+		}
+
+		// Send welcome email.
+		$this->email->send_welcome_email( $member->user_id );
+
+		/**
+		 * Fires after a member account is activated.
+		 *
+		 * @since 1.0.0
+		 * @param int $member_id Member ID.
+		 * @param int $user_id   WordPress user ID.
+		 */
+		do_action( 'mbrreg_member_activated', $member->id, $member->user_id );
+
+		return true;
+	}
+
+	/**
+	 * Update member details.
+	 *
+	 * @since 1.0.0
+	 * @param int   $member_id     Member ID.
+	 * @param array $data          Member data.
+	 * @param bool  $is_admin_edit Whether this is an admin edit.
+	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 */
+	public function update( $member_id, $data, $is_admin_edit = false ) {
+		$member = $this->database->get_member( $member_id );
+
+		if ( ! $member ) {
+			return new WP_Error( 'member_not_found', __( 'Member not found.', 'member-registration-plugin' ) );
+		}
+
+		// Validate member data.
+		$validation = $this->validate_member_data( $data, true );
+		if ( is_wp_error( $validation ) ) {
+			return $validation;
+		}
+
+		// Prepare update data.
+		$update_data = array();
+
+		if ( isset( $data['first_name'] ) ) {
+			$update_data['first_name'] = sanitize_text_field( $data['first_name'] );
+		}
+
+		if ( isset( $data['last_name'] ) ) {
+			$update_data['last_name'] = sanitize_text_field( $data['last_name'] );
+		}
+
+		if ( isset( $data['status'] ) && array_key_exists( $data['status'], self::get_statuses() ) ) {
+			$update_data['status'] = $data['status'];
+		}
+
+		if ( isset( $data['is_admin'] ) ) {
+			$update_data['is_admin'] = (int) $data['is_admin'];
+		}
+
+		// Update member.
+		if ( ! empty( $update_data ) ) {
+			$result = $this->database->update_member( $member_id, $update_data );
+
+			if ( ! $result ) {
+				return new WP_Error( 'update_failed', __( 'Failed to update member.', 'member-registration-plugin' ) );
+			}
+		}
+
+		// Update WordPress user data if email changed (admin only).
+		if ( $is_admin_edit && isset( $data['email'] ) && is_email( $data['email'] ) ) {
+			$user = get_user_by( 'ID', $member->user_id );
+			if ( $user && $user->user_email !== $data['email'] ) {
+				// Check if email is already used by another user.
+				$existing = email_exists( $data['email'] );
+				if ( $existing && $existing !== $member->user_id ) {
+					return new WP_Error( 'email_exists', __( 'This email address is already in use.', 'member-registration-plugin' ) );
+				}
+
+				wp_update_user(
+					array(
+						'ID'         => $member->user_id,
+						'user_email' => sanitize_email( $data['email'] ),
+					)
+				);
+			}
+		}
+
+		// Update WordPress user first/last name.
+		$user_update = array( 'ID' => $member->user_id );
+		if ( isset( $data['first_name'] ) ) {
+			$user_update['first_name'] = sanitize_text_field( $data['first_name'] );
+		}
+		if ( isset( $data['last_name'] ) ) {
+			$user_update['last_name'] = sanitize_text_field( $data['last_name'] );
+		}
+		if ( count( $user_update ) > 1 ) {
+			wp_update_user( $user_update );
+		}
+
+		// Save custom field values.
+		$this->save_custom_field_values( $member_id, $data, $is_admin_edit );
+
+		/**
+		 * Fires after a member is updated.
+		 *
+		 * @since 1.0.0
+		 * @param int   $member_id Member ID.
+		 * @param array $data      Update data.
+		 */
+		do_action( 'mbrreg_member_updated', $member_id, $data );
+
+		return true;
+	}
+
+	/**
+	 * Delete a member.
+	 *
+	 * @since 1.0.0
+	 * @param int  $member_id      Member ID.
+	 * @param bool $delete_wp_user Whether to delete WordPress user too.
+	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 */
+	public function delete( $member_id, $delete_wp_user = false ) {
+		$member = $this->database->get_member( $member_id );
+
+		if ( ! $member ) {
+			return new WP_Error( 'member_not_found', __( 'Member not found.', 'member-registration-plugin' ) );
+		}
+
+		$user_id = $member->user_id;
+
+		// Check if this is the last member for this user.
+		$member_count = $this->database->count_members_by_user_id( $user_id );
+
+		// Delete member.
+		$result = $this->database->delete_member( $member_id );
+
+		if ( ! $result ) {
+			return new WP_Error( 'delete_failed', __( 'Failed to delete member.', 'member-registration-plugin' ) );
+		}
+
+		// Delete WordPress user if requested and this was the last member.
+		if ( $delete_wp_user && $user_id && 1 === $member_count ) {
+			wp_delete_user( $user_id );
+		}
+
+		/**
+		 * Fires after a member is deleted.
+		 *
+		 * @since 1.0.0
+		 * @param int $member_id Member ID.
+		 * @param int $user_id   WordPress user ID.
+		 */
+		do_action( 'mbrreg_member_deleted', $member_id, $user_id );
+
+		return true;
+	}
+
+	/**
+	 * Set member as inactive.
+	 *
+	 * @since 1.0.0
+	 * @param int $member_id Member ID.
+	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 */
+	public function set_inactive( $member_id ) {
+		$member = $this->database->get_member( $member_id );
+
+		if ( ! $member ) {
+			return new WP_Error( 'member_not_found', __( 'Member not found.', 'member-registration-plugin' ) );
+		}
+
+		$result = $this->update( $member_id, array( 'status' => 'inactive' ) );
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		// Check if this was the last active member for the user.
+		$active_count = $this->database->count_members_by_user_id( $member->user_id, 'active' );
+
+		// Return whether user should be logged out (no more active members).
+		return array(
+			'success'       => true,
+			'logout_user'   => ( 0 === $active_count ),
+			'active_count'  => $active_count,
+		);
+	}
+
+	/**
+	 * Set member as active.
+	 *
+	 * @since 1.0.0
+	 * @param int $member_id Member ID.
+	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 */
+	public function set_active( $member_id ) {
+		return $this->update( $member_id, array( 'status' => 'active' ) );
+	}
+
+	/**
+	 * Set member as admin.
+	 *
+	 * @since 1.0.0
+	 * @param int  $member_id Member ID.
+	 * @param bool $is_admin  Whether member is admin.
+	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 */
+	public function set_admin( $member_id, $is_admin = true ) {
+		$member = $this->database->get_member( $member_id );
+
+		if ( ! $member ) {
+			return new WP_Error( 'member_not_found', __( 'Member not found.', 'member-registration-plugin' ) );
+		}
+
+		$result = $this->database->update_member( $member_id, array( 'is_admin' => (int) $is_admin ) );
+
+		if ( ! $result ) {
+			return new WP_Error( 'update_failed', __( 'Failed to update member admin status.', 'member-registration-plugin' ) );
+		}
+
+		// Update WordPress user capabilities.
+		$user = get_user_by( 'ID', $member->user_id );
+		if ( $user ) {
+			if ( $is_admin ) {
+				$user->add_cap( 'mbrreg_manage_members' );
+			} else {
+				$user->remove_cap( 'mbrreg_manage_members' );
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Get a member by ID.
+	 *
+	 * @since 1.0.0
+	 * @param int $member_id Member ID.
+	 * @return object|null Member object or null.
+	 */
+	public function get( $member_id ) {
+		$member = $this->database->get_member( $member_id );
+
+		if ( $member ) {
+			$member = $this->enrich_member_data( $member );
+		}
+
+		return $member;
+	}
+
+	/**
+	 * Get a member by user ID.
+	 *
+	 * @since 1.0.0
+	 * @param int $user_id WordPress user ID.
+	 * @return object|null Member object or null.
+	 */
+	public function get_by_user_id( $user_id ) {
+		$member = $this->database->get_member_by_user_id( $user_id );
+
+		if ( $member ) {
+			$member = $this->enrich_member_data( $member );
+		}
+
+		return $member;
+	}
+
+	/**
+	 * Get all members by user ID.
+	 *
+	 * @since 1.1.0
+	 * @param int $user_id WordPress user ID.
+	 * @return array Array of member objects.
+	 */
+	public function get_all_by_user_id( $user_id ) {
+		$members = $this->database->get_members_by_user_id( $user_id );
+
+		foreach ( $members as $key => $member ) {
+			$members[ $key ] = $this->enrich_member_data( $member );
+		}
+
+		return $members;
+	}
+
+	/**
+	 * Get all members.
+	 *
+	 * @since 1.0.0
+	 * @param array $args Query arguments.
+	 * @return array Array of member objects.
+	 */
+	public function get_all( $args = array() ) {
+		$members = $this->database->get_members( $args );
+
+		foreach ( $members as $key => $member ) {
+			$members[ $key ] = $this->enrich_member_data( $member );
+		}
+
+		return $members;
+	}
+
+	/**
+	 * Count members.
+	 *
+	 * @since 1.0.0
+	 * @param array $args Query arguments.
+	 * @return int Number of members.
+	 */
+	public function count( $args = array() ) {
+		return $this->database->count_members( $args );
+	}
+
+	/**
+	 * Enrich member data with WordPress user info and custom fields.
+	 *
+	 * @since 1.0.0
+	 * @param object $member Member object.
+	 * @return object Enriched member object.
+	 */
+	private function enrich_member_data( $member ) {
+		// Get WordPress user.
+		$user = get_user_by( 'ID', $member->user_id );
+
+		if ( $user ) {
+			$member->username = $user->user_login;
+			$member->email    = $user->user_email;
+		} else {
+			$member->username = '';
+			$member->email    = '';
+		}
+
+		// Get custom field values.
+		$member->custom_fields = $this->database->get_member_meta( $member->id );
+
+		return $member;
+	}
+
+	/**
+	 * Validate member data.
+	 *
+	 * @since 1.0.0
+	 * @param array $data      Member data.
+	 * @param bool  $is_update Whether this is an update operation.
+	 * @return true|WP_Error True on success, WP_Error on validation failure.
+	 */
+	private function validate_member_data( $data, $is_update = false ) {
+		// Check required standard fields (only first_name and last_name now).
+		$required_fields = array(
+			'first_name' => get_option( 'mbrreg_require_first_name', false ),
+			'last_name'  => get_option( 'mbrreg_require_last_name', false ),
+		);
+
+		foreach ( $required_fields as $field => $is_required ) {
+			if ( $is_required && ( ! isset( $data[ $field ] ) || '' === $data[ $field ] ) ) {
+				$label = ucwords( str_replace( '_', ' ', $field ) );
+				return new WP_Error(
+					'missing_' . $field,
+					/* translators: %s: Field name */
+					sprintf( __( '%s is required.', 'member-registration-plugin' ), $label )
+				);
+			}
+		}
+
+		// Validate custom fields.
+		$custom_fields = $this->custom_fields->get_all();
+
+		foreach ( $custom_fields as $field ) {
+			// Skip admin-only fields for regular users.
+			if ( $field->is_admin_only && ! current_user_can( 'mbrreg_manage_members' ) ) {
+				continue;
+			}
+
+			$field_key = 'custom_' . $field->id;
+
+			if ( $field->is_required && ( ! isset( $data[ $field_key ] ) || '' === $data[ $field_key ] ) ) {
+				return new WP_Error(
+					'missing_custom_' . $field->id,
+					/* translators: %s: Field label */
+					sprintf( __( '%s is required.', 'member-registration-plugin' ), $field->field_label )
+				);
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Save custom field values.
+	 *
+	 * @since 1.0.0
+	 * @param int   $member_id     Member ID.
+	 * @param array $data          Data containing custom field values.
+	 * @param bool  $is_admin_edit Whether this is an admin edit.
+	 * @return void
+	 */
+	private function save_custom_field_values( $member_id, $data, $is_admin_edit = false ) {
+		$custom_fields = $this->custom_fields->get_all();
+
+		foreach ( $custom_fields as $field ) {
+			// Skip admin-only fields for regular users.
+			if ( $field->is_admin_only && ! $is_admin_edit ) {
+				continue;
+			}
+
+			$field_key = 'custom_' . $field->id;
+
+			if ( isset( $data[ $field_key ] ) ) {
+				$value = $this->custom_fields->sanitize_field_value( $field, $data[ $field_key ] );
+				$this->database->update_member_meta( $member_id, $field->id, $value );
+			}
+		}
+	}
+
+	/**
+	 * Check if current user is a member admin.
+	 *
+	 * @since 1.0.0
+	 * @param int $user_id User ID (optional, defaults to current user).
+	 * @return bool
+	 */
+	public function is_member_admin( $user_id = null ) {
+		if ( null === $user_id ) {
+			$user_id = get_current_user_id();
+		}
+
+		if ( ! $user_id ) {
+			return false;
+		}
+
+		// WordPress administrators always have access.
+		if ( user_can( $user_id, 'manage_options' ) ) {
+			return true;
+		}
+
+		// Check if user is a member admin.
+		$members = $this->database->get_members_by_user_id( $user_id );
+
+		foreach ( $members as $member ) {
+			if ( $member->is_admin ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Resend activation email.
+	 *
+	 * @since 1.0.0
+	 * @param int $member_id Member ID.
+	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 */
+	public function resend_activation_email( $member_id ) {
+		$member = $this->database->get_member( $member_id );
+
+		if ( ! $member ) {
+			return new WP_Error( 'member_not_found', __( 'Member not found.', 'member-registration-plugin' ) );
+		}
+
+		if ( 'pending' !== $member->status ) {
+			return new WP_Error( 'already_active', __( 'This account is already activated.', 'member-registration-plugin' ) );
+		}
+
+		// Generate new activation key.
+		$activation_key = wp_generate_password( 32, false );
+
+		// Update member with new key.
+		$this->database->update_member( $member_id, array( 'activation_key' => $activation_key ) );
+
+		// Send email.
+		$this->email->send_activation_email( $member->user_id, $activation_key );
+
+		return true;
+	}
+
+	/**
+	 * Check if user can manage a specific member.
+	 *
+	 * @since 1.1.0
+	 * @param int $member_id Member ID.
+	 * @param int $user_id   User ID (optional, defaults to current user).
+	 * @return bool
+	 */
+	public function can_manage_member( $member_id, $user_id = null ) {
+		if ( null === $user_id ) {
+			$user_id = get_current_user_id();
+		}
+
+		if ( ! $user_id ) {
+			return false;
+		}
+
+		// Admins can manage all members.
+		if ( $this->is_member_admin( $user_id ) ) {
+			return true;
+		}
+
+		// Check if member belongs to user.
+		$member = $this->database->get_member( $member_id );
+
+		return $member && (int) $member->user_id === (int) $user_id;
+	}
+
+	/**
+	 * Export members to CSV.
+	 *
+	 * @since 1.1.0
+	 * @param array $args Query arguments.
+	 * @return string CSV content.
+	 */
+	public function export_csv( $args = array() ) {
+		$members       = $this->get_all( $args );
+		$custom_fields = $this->custom_fields->get_all();
+
+		// Build CSV header (simplified - removed old default fields).
+		$headers = array(
+			'ID',
+			'Username',
+			'Email',
+			'First Name',
+			'Last Name',
+			'Status',
+			'Is Admin',
+			'Registered',
+		);
+
+		// Add custom field headers.
+		foreach ( $custom_fields as $field ) {
+			$headers[] = $field->field_label;
+		}
+
+		// Start CSV output.
+		$output = fopen( 'php://temp', 'r+' );
+		fputcsv( $output, $headers );
+
+		// Add member rows.
+		foreach ( $members as $member ) {
+			$row = array(
+				$member->id,
+				$member->username,
+				$member->email,
+				$member->first_name,
+				$member->last_name,
+				$member->status,
+				$member->is_admin ? 'Yes' : 'No',
+				mbrreg_format_date( $member->created_at, 'Y-m-d H:i:s' ),
+			);
+
+			// Add custom field values.
+			foreach ( $custom_fields as $field ) {
+				$value = isset( $member->custom_fields[ $field->id ] ) ? $member->custom_fields[ $field->id ] : '';
+				// Format date fields for export.
+				if ( 'date' === $field->field_type && ! empty( $value ) ) {
+					$value = mbrreg_format_date( $value );
+				}
+				$row[] = $value;
+			}
+
+			fputcsv( $output, $row );
+		}
+
+		rewind( $output );
+		$csv = stream_get_contents( $output );
+		fclose( $output );
+
+		return $csv;
+	}
+
+	/**
+	 * Import members from CSV data.
+	 *
+	 * @since 1.1.0
+	 * @param array $csv_data Parsed CSV data.
+	 * @return array Import results.
+	 */
+	public function import_csv( $csv_data ) {
+		$results = array(
+			'success' => 0,
+			'errors'  => array(),
+			'skipped' => 0,
+		);
+
+		foreach ( $csv_data as $row_num => $row ) {
+			// Skip header row.
+			if ( 0 === $row_num ) {
+				continue;
+			}
+
+			$data = $this->parse_csv_row( $row );
+
+			if ( empty( $data['email'] ) ) {
+				$results['errors'][] = sprintf(
+					/* translators: %d: Row number */
+					__( 'Row %d: Email is required.', 'member-registration-plugin' ),
+					$row_num + 1
+				);
+				continue;
+			}
+
+			$result = $this->register( $data, true );
+
+			if ( is_wp_error( $result ) ) {
+				$results['errors'][] = sprintf(
+					/* translators: 1: Row number, 2: Error message */
+					__( 'Row %1$d: %2$s', 'member-registration-plugin' ),
+					$row_num + 1,
+					$result->get_error_message()
+				);
+			} else {
+				++$results['success'];
+			}
+		}
+
+		return $results;
+	}
+
+	/**
+	 * Parse CSV row into member data.
+	 *
+	 * @since 1.1.0
+	 * @param array $row CSV row.
+	 * @return array Member data.
+	 */
+	private function parse_csv_row( $row ) {
+		// Expected column order: Email, First Name, Last Name, then custom fields.
+		$data = array(
+			'email'      => isset( $row[0] ) ? trim( $row[0] ) : '',
+			'first_name' => isset( $row[1] ) ? trim( $row[1] ) : '',
+			'last_name'  => isset( $row[2] ) ? trim( $row[2] ) : '',
+		);
+
+		// Parse additional custom fields if present.
+		$custom_fields = $this->custom_fields->get_all();
+		$col_index     = 3;
+
+		foreach ( $custom_fields as $field ) {
+			if ( isset( $row[ $col_index ] ) ) {
+				$value = trim( $row[ $col_index ] );
+				// Parse date fields from display format to database format.
+				if ( 'date' === $field->field_type && ! empty( $value ) ) {
+					$value = mbrreg_parse_date( $value );
+				}
+				$data[ 'custom_' . $field->id ] = $value;
+			}
+			++$col_index;
+		}
+
+		return $data;
+	}
+}
+```
+
+---
+
+## includes/class-mbrreg-email.php (UPDATED - Multilingual emails)
+
+```php
+<?php
+/**
+ * Email handling class.
+ *
+ * @package Member_Registration_Plugin
+ * @subpackage Member_Registration_Plugin/includes
+ * @since 1.0.0
+ */
+
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
+
+/**
+ * Class Mbrreg_Email
+ *
+ * Handles email sending for the plugin.
+ *
+ * @since 1.0.0
+ */
+class Mbrreg_Email {
+
+	/**
+	 * Send activation email to new member.
+	 *
+	 * @since 1.0.0
+	 * @param int    $user_id        WordPress user ID.
+	 * @param string $activation_key Activation key.
+	 * @return bool Whether the email was sent successfully.
+	 */
+	public function send_activation_email( $user_id, $activation_key ) {
+		$user = get_user_by( 'ID', $user_id );
+
+		if ( ! $user ) {
+			return false;
+		}
+
+		$activation_url = add_query_arg(
+			array(
+				'mbrreg_action' => 'activate',
+				'key'           => $activation_key,
+			),
+			home_url( '/' )
+		);
+
+		$site_name = get_bloginfo( 'name' );
+
+		$subject = sprintf(
+			/* translators: %s: Site name */
+			__( 'Activate your membership at %s', 'member-registration-plugin' ),
+			$site_name
+		);
+
+		$message = sprintf(
+			/* translators: 1: User display name, 2: Site name, 3: Activation URL, 4: Site name (repeated) */
+			__( 'Hello %1$s,
+
+Thank you for registering as a member at %2$s.
+
+Please click the following link to activate your account:
+
+%3$s
+
+If you did not register for this account, please ignore this email.
+
+Best regards,
+%4$s', 'member-registration-plugin' ),
+			$user->display_name,
+			$site_name,
+			$activation_url,
+			$site_name
+		);
+
+		$headers = $this->get_email_headers();
+
+		/**
+		 * Filter the activation email subject.
+		 *
+		 * @since 1.0.0
+		 * @param string  $subject Subject line.
+		 * @param WP_User $user    User object.
+		 */
+		$subject = apply_filters( 'mbrreg_activation_email_subject', $subject, $user );
+
+		/**
+		 * Filter the activation email message.
+		 *
+		 * @since 1.0.0
+		 * @param string  $message        Email message.
+		 * @param WP_User $user           User object.
+		 * @param string  $activation_url Activation URL.
+		 */
+		$message = apply_filters( 'mbrreg_activation_email_message', $message, $user, $activation_url );
+
+		return wp_mail( $user->user_email, $subject, $message, $headers );
+	}
+
+	/**
+	 * Send activation email for imported members.
+	 *
+	 * @since 1.1.0
+	 * @param int    $user_id        WordPress user ID.
+	 * @param string $activation_key Activation key.
+	 * @param array  $data           Import data.
+	 * @return bool Whether the email was sent successfully.
+	 */
+	public function send_import_activation_email( $user_id, $activation_key, $data = array() ) {
+		$user = get_user_by( 'ID', $user_id );
+
+		if ( ! $user ) {
+			return false;
+		}
+
+		$activation_url = add_query_arg(
+			array(
+				'mbrreg_action' => 'activate',
+				'key'           => $activation_key,
+			),
+			home_url( '/' )
+		);
+
+		// Get member area page URL.
+		$page_id  = get_option( 'mbrreg_registration_page_id', 0 );
+		$page_url = $page_id ? get_permalink( $page_id ) : home_url( '/' );
+
+		$site_name    = get_bloginfo( 'name' );
+		$display_name = ! empty( $data['first_name'] ) ? $data['first_name'] : $user->user_email;
+
+		$subject = sprintf(
+			/* translators: %s: Site name */
+			__( 'You have been registered as a member at %s', 'member-registration-plugin' ),
+			$site_name
+		);
+
+		$message = sprintf(
+			/* translators: 1: User display name, 2: Site name, 3: Activation URL, 4: Member area URL, 5: Username, 6: Site name (repeated) */
+			__( 'Hello %1$s,
+
+You have been registered as a member at %2$s.
+
+Please click the following link to activate your account:
+
+%3$s
+
+After activation, you can log in and review/update your details at:
+%4$s
+
+Your username is: %5$s
+
+If you need to set a password, please use the password reset function on the login page.
+
+If you did not expect this email, please contact the club administrator.
+
+Best regards,
+%6$s', 'member-registration-plugin' ),
+			$display_name,
+			$site_name,
+			$activation_url,
+			$page_url,
+			$user->user_login,
+			$site_name
+		);
+
+		$headers = $this->get_email_headers();
+
+		/**
+		 * Filter the import activation email subject.
+		 *
+		 * @since 1.1.0
+		 * @param string  $subject Subject line.
+		 * @param WP_User $user    User object.
+		 */
+		$subject = apply_filters( 'mbrreg_import_activation_email_subject', $subject, $user );
+
+		/**
+		 * Filter the import activation email message.
+		 *
+		 * @since 1.1.0
+		 * @param string  $message        Email message.
+		 * @param WP_User $user           User object.
+		 * @param string  $activation_url Activation URL.
+		 */
+		$message = apply_filters( 'mbrreg_import_activation_email_message', $message, $user, $activation_url );
+
+		return wp_mail( $user->user_email, $subject, $message, $headers );
+	}
+
+	/**
+	 * Send notification to admin about new registration.
+	 *
+	 * @since 1.0.0
+	 * @param int   $member_id Member ID.
+	 * @param array $data      Member data.
+	 * @return bool Whether the email was sent successfully.
+	 */
+	public function send_admin_notification( $member_id, $data ) {
+		$admin_email = get_option( 'admin_email' );
+		$site_name   = get_bloginfo( 'name' );
+
+		$subject = sprintf(
+			/* translators: %s: Site name */
+			__( 'New member registration at %s', 'member-registration-plugin' ),
+			$site_name
+		);
+
+		$message = sprintf(
+			/* translators: 1: Username, 2: Email */
+			__( 'A new member has registered:
+
+Username: %1$s
+Email: %2$s
+
+You can view and manage members in the WordPress admin area.', 'member-registration-plugin' ),
+			isset( $data['username'] ) ? $data['username'] : '',
+			isset( $data['email'] ) ? $data['email'] : ''
+		);
+
+		$headers = $this->get_email_headers();
+
+		return wp_mail( $admin_email, $subject, $message, $headers );
+	}
+
+	/**
+	 * Send welcome email after account activation.
+	 *
+	 * @since 1.0.0
+	 * @param int $user_id WordPress user ID.
+	 * @return bool Whether the email was sent successfully.
+	 */
+	public function send_welcome_email( $user_id ) {
+		$user = get_user_by( 'ID', $user_id );
+
+		if ( ! $user ) {
+			return false;
+		}
+
+		// Get member area page URL.
+		$page_id  = get_option( 'mbrreg_registration_page_id', 0 );
+		$page_url = $page_id ? get_permalink( $page_id ) : wp_login_url();
+
+		$site_name = get_bloginfo( 'name' );
+
+		$subject = sprintf(
+			/* translators: %s: Site name */
+			__( 'Welcome to %s!', 'member-registration-plugin' ),
+			$site_name
+		);
+
+		$message = sprintf(
+			/* translators: 1: User display name, 2: Site name, 3: Login URL, 4: Site name (repeated) */
+			__( 'Hello %1$s,
+
+Your account at %2$s has been activated successfully!
+
+You can now log in and manage your membership details at:
+%3$s
+
+Best regards,
+%4$s', 'member-registration-plugin' ),
+			$user->display_name,
+			$site_name,
+			$page_url,
+			$site_name
+		);
+
+		$headers = $this->get_email_headers();
+
+		/**
+		 * Filter the welcome email subject.
+		 *
+		 * @since 1.0.0
+		 * @param string  $subject Subject line.
+		 * @param WP_User $user    User object.
+		 */
+		$subject = apply_filters( 'mbrreg_welcome_email_subject', $subject, $user );
+
+		/**
+		 * Filter the welcome email message.
+		 *
+		 * @since 1.0.0
+		 * @param string  $message Email message.
+		 * @param WP_User $user    User object.
+		 */
+		$message = apply_filters( 'mbrreg_welcome_email_message', $message, $user );
+
+		return wp_mail( $user->user_email, $subject, $message, $headers );
+	}
+
+	/**
+	 * Get email headers.
+	 *
+	 * @since 1.0.0
+	 * @return array Email headers.
+	 */
+	private function get_email_headers() {
+		$from_name    = get_option( 'mbrreg_email_from_name', get_bloginfo( 'name' ) );
+		$from_address = get_option( 'mbrreg_email_from_address', get_option( 'admin_email' ) );
+
+		$headers = array(
+			'Content-Type: text/plain; charset=UTF-8',
+			sprintf( 'From: %s <%s>', $from_name, $from_address ),
+		);
+
+		/**
+		 * Filter email headers.
+		 *
+		 * @since 1.0.0
+		 * @param array $headers Email headers.
+		 */
+		return apply_filters( 'mbrreg_email_headers', $headers );
+	}
+}
+```
+
+---
+
+## admin/partials/mbrreg-admin-settings.php (UPDATED)
+
+```php
+<?php
+/**
+ * Admin settings page template.
+ *
+ * @package Member_Registration_Plugin
+ * @subpackage Member_Registration_Plugin/admin/partials
+ * @since 1.0.0
+ */
+
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
+
+// Get all pages for dropdown.
+$pages = get_pages();
+?>
+
+<div class="wrap mbrreg-admin-wrap">
+	<h1><?php esc_html_e( 'Member Registration Settings', 'member-registration-plugin' ); ?></h1>
+
+	<?php settings_errors(); ?>
+
+	<form method="post" action="options.php">
+		<?php settings_fields( 'mbrreg_settings' ); ?>
+
+		<!-- Registration Settings -->
+		<div class="mbrreg-settings-section">
+			<h2><?php esc_html_e( 'Registration Settings', 'member-registration-plugin' ); ?></h2>
+			<table class="form-table">
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Allow Registration', 'member-registration-plugin' ); ?></th>
+					<td>
+						<label>
+							<input type="checkbox" name="mbrreg_allow_registration" value="1" <?php checked( get_option( 'mbrreg_allow_registration', true ) ); ?>>
+							<?php esc_html_e( 'Allow new members to register', 'member-registration-plugin' ); ?>
+						</label>
+						<p class="description"><?php esc_html_e( 'When disabled, the registration form will not be shown.', 'member-registration-plugin' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Allow Multiple Members', 'member-registration-plugin' ); ?></th>
+					<td>
+						<label>
+							<input type="checkbox" name="mbrreg_allow_multiple_members" value="1" <?php checked( get_option( 'mbrreg_allow_multiple_members', true ) ); ?>>
+							<?php esc_html_e( 'Allow users to register multiple members under one account', 'member-registration-plugin' ); ?>
+						</label>
+						<p class="description"><?php esc_html_e( 'Useful for parents registering multiple children or family members.', 'member-registration-plugin' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						<label for="mbrreg_registration_page_id"><?php esc_html_e( 'Member Area Page', 'member-registration-plugin' ); ?></label>
+					</th>
+					<td>
+						<select name="mbrreg_registration_page_id" id="mbrreg_registration_page_id">
+							<option value="0"><?php esc_html_e( '— Select —', 'member-registration-plugin' ); ?></option>
+							<?php foreach ( $pages as $page ) : ?>
+								<option value="<?php echo esc_attr( $page->ID ); ?>" <?php selected( get_option( 'mbrreg_registration_page_id' ), $page->ID ); ?>>
+									<?php echo esc_html( $page->post_title ); ?>
+								</option>
+							<?php endforeach; ?>
+						</select>
+						<p class="description"><?php esc_html_e( 'The page containing the [mbrreg_member_area] shortcode.', 'member-registration-plugin' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						<label for="mbrreg_login_redirect_page"><?php esc_html_e( 'Login Redirect Page', 'member-registration-plugin' ); ?></label>
+					</th>
+					<td>
+						<select name="mbrreg_login_redirect_page" id="mbrreg_login_redirect_page">
+							<option value="0"><?php esc_html_e( '— Select —', 'member-registration-plugin' ); ?></option>
+							<?php foreach ( $pages as $page ) : ?>
+								<option value="<?php echo esc_attr( $page->ID ); ?>" <?php selected( get_option( 'mbrreg_login_redirect_page' ), $page->ID ); ?>>
+									<?php echo esc_html( $page->post_title ); ?>
+								</option>
+							<?php endforeach; ?>
+						</select>
+						<p class="description"><?php esc_html_e( 'Where to redirect members after successful login.', 'member-registration-plugin' ); ?></p>
+					</td>
+				</tr>
+			</table>
+		</div>
+
+		<!-- Display Settings -->
+		<div class="mbrreg-settings-section">
+			<h2><?php esc_html_e( 'Display Settings', 'member-registration-plugin' ); ?></h2>
+			<table class="form-table">
+				<tr>
+					<th scope="row">
+						<label for="mbrreg_date_format"><?php esc_html_e( 'Date Format', 'member-registration-plugin' ); ?></label>
+					</th>
+					<td>
+						<select name="mbrreg_date_format" id="mbrreg_date_format">
+							<option value="eu" <?php selected( get_option( 'mbrreg_date_format', 'eu' ), 'eu' ); ?>>
+								<?php esc_html_e( 'European (DD/MM/YYYY)', 'member-registration-plugin' ); ?>
+							</option>
+							<option value="us" <?php selected( get_option( 'mbrreg_date_format', 'eu' ), 'us' ); ?>>
+								<?php esc_html_e( 'US (MM/DD/YYYY)', 'member-registration-plugin' ); ?>
+							</option>
+						</select>
+						<p class="description"><?php esc_html_e( 'Choose how dates are displayed throughout the plugin.', 'member-registration-plugin' ); ?></p>
+					</td>
+				</tr>
+			</table>
+		</div>
+
+		<!-- Required Fields -->
+		<div class="mbrreg-settings-section">
+			<h2><?php esc_html_e( 'Required Fields', 'member-registration-plugin' ); ?></h2>
+			<p class="description"><?php esc_html_e( 'Select which default fields should be required during registration and profile updates. Additional fields can be configured in the Custom Fields section.', 'member-registration-plugin' ); ?></p>
+			<table class="form-table">
+				<tr>
+					<th scope="row"><?php esc_html_e( 'First Name', 'member-registration-plugin' ); ?></th>
+					<td>
+						<label>
+							<input type="checkbox" name="mbrreg_require_first_name" value="1" <?php checked( get_option( 'mbrreg_require_first_name', false ) ); ?>>
+							<?php esc_html_e( 'Required', 'member-registration-plugin' ); ?>
+						</label>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Last Name', 'member-registration-plugin' ); ?></th>
+					<td>
+						<label>
+							<input type="checkbox" name="mbrreg_require_last_name" value="1" <?php checked( get_option( 'mbrreg_require_last_name', false ) ); ?>>
+							<?php esc_html_e( 'Required', 'member-registration-plugin' ); ?>
+						</label>
+					</td>
+				</tr>
+			</table>
+		</div>
+
+		<!-- Email Settings -->
+		<div class="mbrreg-settings-section">
+			<h2><?php esc_html_e( 'Email Settings', 'member-registration-plugin' ); ?></h2>
+			<table class="form-table">
+				<tr>
+					<th scope="row">
+						<label for="mbrreg_email_from_name"><?php esc_html_e( 'From Name', 'member-registration-plugin' ); ?></label>
+					</th>
+					<td>
+						<input type="text" name="mbrreg_email_from_name" id="mbrreg_email_from_name" value="<?php echo esc_attr( get_option( 'mbrreg_email_from_name', get_bloginfo( 'name' ) ) ); ?>" class="regular-text">
+						<p class="description"><?php esc_html_e( 'The name that will appear in the "From" field of emails.', 'member-registration-plugin' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						<label for="mbrreg_email_from_address"><?php esc_html_e( 'From Email', 'member-registration-plugin' ); ?></label>
+					</th>
+					<td>
+						<input type="email" name="mbrreg_email_from_address" id="mbrreg_email_from_address" value="<?php echo esc_attr( get_option( 'mbrreg_email_from_address', get_option( 'admin_email' ) ) ); ?>" class="regular-text">
+						<p class="description"><?php esc_html_e( 'The email address that will appear in the "From" field.', 'member-registration-plugin' ); ?></p>
+					</td>
+				</tr>
+			</table>
+		</div>
+
+		<!-- Shortcodes Reference -->
+		<div class="mbrreg-settings-section">
+			<h2><?php esc_html_e( 'Shortcodes', 'member-registration-plugin' ); ?></h2>
+			<table class="form-table mbrreg-shortcodes-table">
+				<tr>
+					<th><code>[mbrreg_member_area]</code></th>
+					<td><?php esc_html_e( 'Complete member area with login, registration, and dashboard.', 'member-registration-plugin' ); ?></td>
+				</tr>
+				<tr>
+					<th><code>[mbrreg_login_form]</code></th>
+					<td><?php esc_html_e( 'Standalone login form.', 'member-registration-plugin' ); ?></td>
+				</tr>
+				<tr>
+					<th><code>[mbrreg_register_form]</code></th>
+					<td><?php esc_html_e( 'Standalone registration form.', 'member-registration-plugin' ); ?></td>
+				</tr>
+				<tr>
+					<th><code>[mbrreg_member_dashboard]</code></th>
+					<td><?php esc_html_e( 'Member dashboard (for logged-in members only).', 'member-registration-plugin' ); ?></td>
+				</tr>
+			</table>
+		</div>
+
+		<?php submit_button(); ?>
+	</form>
+</div>
+```
+
+---
+
+## includes/class-mbrreg-admin.php (UPDATED - added date_format setting)
+
+```php
+<?php
+/**
+ * Admin functionality class.
+ *
+ * @package Member_Registration_Plugin
+ * @subpackage Member_Registration_Plugin/includes
+ * @since 1.0.0
+ */
+
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
+
+/**
+ * Class Mbrreg_Admin
+ *
+ * Handles admin functionality.
+ *
+ * @since 1.0.0
+ */
+class Mbrreg_Admin {
+
+	/**
+	 * Member instance.
+	 *
+	 * @since 1.0.0
+	 * @var Mbrreg_Member
+	 */
+	private $member;
+
+	/**
+	 * Custom fields instance.
+	 *
+	 * @since 1.0.0
+	 * @var Mbrreg_Custom_Fields
+	 */
+	private $custom_fields;
+
+	/**
+	 * Email instance.
+	 *
+	 * @since 1.1.0
+	 * @var Mbrreg_Email
+	 */
+	private $email;
+
+	/**
+	 * Constructor.
+	 *
+	 * @since 1.0.0
+	 * @param Mbrreg_Member        $member        Member instance.
+	 * @param Mbrreg_Custom_Fields $custom_fields Custom fields instance.
+	 * @param Mbrreg_Email         $email         Email instance.
+	 */
+	public function __construct( Mbrreg_Member $member, Mbrreg_Custom_Fields $custom_fields, Mbrreg_Email $email = null ) {
+		$this->member        = $member;
+		$this->custom_fields = $custom_fields;
+		$this->email         = $email;
+	}
+
+	/**
+	 * Initialize admin hooks.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function init() {
+		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+		add_action( 'admin_init', array( $this, 'register_settings' ) );
+		add_action( 'admin_init', array( $this, 'handle_csv_export' ) );
+	}
+
+	/**
+	 * Add admin menu pages.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function add_admin_menu() {
+		// Main menu.
+		add_menu_page(
+			__( 'Member Registration', 'member-registration-plugin' ),
+			__( 'Members', 'member-registration-plugin' ),
+			'mbrreg_manage_members',
+			'mbrreg-members',
+			array( $this, 'render_members_page' ),
+			'dashicons-groups',
+			30
+		);
+
+		// Members submenu.
+		add_submenu_page(
+			'mbrreg-members',
+			__( 'All Members', 'member-registration-plugin' ),
+			__( 'All Members', 'member-registration-plugin' ),
+			'mbrreg_manage_members',
+			'mbrreg-members',
+			array( $this, 'render_members_page' )
+		);
+
+		// Custom fields submenu.
+		add_submenu_page(
+			'mbrreg-members',
+			__( 'Custom Fields', 'member-registration-plugin' ),
+			__( 'Custom Fields', 'member-registration-plugin' ),
+			'mbrreg_manage_custom_fields',
+			'mbrreg-custom-fields',
+			array( $this, 'render_custom_fields_page' )
+		);
+
+		// Import/Export submenu.
+		add_submenu_page(
+			'mbrreg-members',
+			__( 'Import / Export', 'member-registration-plugin' ),
+			__( 'Import / Export', 'member-registration-plugin' ),
+			'mbrreg_import_members',
+			'mbrreg-import-export',
+			array( $this, 'render_import_export_page' )
+		);
+
+		// Settings submenu.
+		add_submenu_page(
+			'mbrreg-members',
+			__( 'Settings', 'member-registration-plugin' ),
+			__( 'Settings', 'member-registration-plugin' ),
+			'mbrreg_manage_settings',
+			'mbrreg-settings',
+			array( $this, 'render_settings_page' )
+		);
+	}
+
+	/**
+	 * Enqueue admin assets.
+	 *
+	 * @since 1.0.0
+	 * @param string $hook Current admin page hook.
+	 * @return void
+	 */
+	public function enqueue_assets( $hook ) {
+		// Only load on our admin pages.
+		if ( strpos( $hook, 'mbrreg' ) === false ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'mbrreg-admin',
+			MBRREG_PLUGIN_URL . 'admin/css/mbrreg-admin.css',
+			array(),
+			MBRREG_VERSION
+		);
+
+		wp_enqueue_script(
+			'mbrreg-admin',
+			MBRREG_PLUGIN_URL . 'admin/js/mbrreg-admin.js',
+			array( 'jquery' ),
+			MBRREG_VERSION,
+			true
+		);
+
+		wp_localize_script(
+			'mbrreg-admin',
+			'mbrregAdmin',
+			array(
+				'ajaxUrl'            => admin_url( 'admin-ajax.php' ),
+				'nonce'              => wp_create_nonce( 'mbrreg_admin_nonce' ),
+				'confirmDelete'      => __( 'Are you sure you want to delete this member? This action cannot be undone.', 'member-registration-plugin' ),
+				'confirmBulk'        => __( 'Are you sure you want to perform this action on the selected members?', 'member-registration-plugin' ),
+				'confirmFieldDelete' => __( 'Are you sure you want to delete this custom field? All associated data will be lost.', 'member-registration-plugin' ),
+				'processing'         => __( 'Processing...', 'member-registration-plugin' ),
+				'success'            => __( 'Success!', 'member-registration-plugin' ),
+				'error'              => __( 'An error occurred.', 'member-registration-plugin' ),
+				'selectMembers'      => __( 'Please select at least one member.', 'member-registration-plugin' ),
+				'selectAction'       => __( 'Please select an action.', 'member-registration-plugin' ),
+				'importSuccess'      => __( 'Import completed successfully!', 'member-registration-plugin' ),
+				'exportSuccess'      => __( 'Export completed successfully!', 'member-registration-plugin' ),
+				'dateFormat'         => get_option( 'mbrreg_date_format', 'eu' ),
+			)
+		);
+	}
+
+	/**
+	 * Register plugin settings.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function register_settings() {
+		// Registration settings.
+		register_setting( 'mbrreg_settings', 'mbrreg_allow_registration' );
+		register_setting( 'mbrreg_settings', 'mbrreg_allow_multiple_members' );
+		register_setting( 'mbrreg_settings', 'mbrreg_registration_page_id' );
+		register_setting( 'mbrreg_settings', 'mbrreg_login_redirect_page' );
+
+		// Display settings.
+		register_setting( 'mbrreg_settings', 'mbrreg_date_format' );
+
+		// Required fields settings (only first_name and last_name now).
+		register_setting( 'mbrreg_settings', 'mbrreg_require_first_name' );
+		register_setting( 'mbrreg_settings', 'mbrreg_require_last_name' );
+
+		// Email settings.
+		register_setting( 'mbrreg_settings', 'mbrreg_email_from_name' );
+		register_setting( 'mbrreg_settings', 'mbrreg_email_from_address' );
+	}
+
+	/**
+	 * Handle CSV export download.
+	 *
+	 * @since 1.1.0
+	 * @return void
+	 */
+	public function handle_csv_export() {
+		if ( ! isset( $_GET['mbrreg_export'] ) || ! isset( $_GET['_wpnonce'] ) ) {
+			return;
+		}
+
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mbrreg_export_csv' ) ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'mbrreg_export_members' ) ) {
+			return;
+		}
+
+		$status = isset( $_GET['status'] ) ? sanitize_text_field( wp_unslash( $_GET['status'] ) ) : '';
+
+		$args = array();
+		if ( ! empty( $status ) ) {
+			$args['status'] = $status;
+		}
+
+		$csv      = $this->member->export_csv( $args );
+		$filename = 'members-export-' . gmdate( 'Y-m-d' ) . '.csv';
+
+		header( 'Content-Type: text/csv; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename=' . $filename );
+		header( 'Pragma: no-cache' );
+		header( 'Expires: 0' );
+
+		echo $csv; // phpcs:ignore
+		exit;
+	}
+
+	/**
+	 * Render members list page.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function render_members_page() {
+		// Check if editing a member.
+		if ( isset( $_GET['action'] ) && 'edit' === $_GET['action'] && isset( $_GET['member_id'] ) ) {
+			$this->render_member_edit_page();
+			return;
+		}
+
+		include MBRREG_PLUGIN_PATH . 'admin/partials/mbrreg-admin-members.php';
+	}
+
+	/**
+	 * Render member edit page.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	private function render_member_edit_page() {
+		$member_id = absint( $_GET['member_id'] );
+		$member    = $this->member->get( $member_id );
+
+		if ( ! $member ) {
+			echo '<div class="wrap"><div class="notice notice-error"><p>' . esc_html__( 'Member not found.', 'member-registration-plugin' ) . '</p></div></div>';
+			return;
+		}
+
+		$custom_fields = $this->custom_fields->get_all();
+
+		include MBRREG_PLUGIN_PATH . 'admin/partials/mbrreg-admin-member-edit.php';
+	}
+
+	/**
+	 * Render custom fields page.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function render_custom_fields_page() {
+		$custom_fields = $this->custom_fields->get_all();
+
+		include MBRREG_PLUGIN_PATH . 'admin/partials/mbrreg-admin-custom-fields.php';
+	}
+
+	/**
+	 * Render import/export page.
+	 *
+	 * @since 1.1.0
+	 * @return void
+	 */
+	public function render_import_export_page() {
+		include MBRREG_PLUGIN_PATH . 'admin/partials/mbrreg-admin-import-export.php';
+	}
+
+	/**
+	 * Render settings page.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function render_settings_page() {
+		include MBRREG_PLUGIN_PATH . 'admin/partials/mbrreg-admin-settings.php';
+	}
+}
+```
+
+---
+
+Now let me continue with the remaining files in **Part 2**:
+
+## public/partials/mbrreg-register-form.php (UPDATED - Simplified)
+
+```php
+<?php
+/**
+ * Registration form template.
+ *
+ * @package Member_Registration_Plugin
+ * @subpackage Member_Registration_Plugin/public/partials
+ * @since 1.0.0
+ */
+
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
+
+// Get custom fields handler for rendering.
+$custom_fields_handler = new Mbrreg_Custom_Fields();
+
+// Check for activation messages.
+$activation_error   = get_transient( 'mbrreg_activation_error' );
+$activation_success = get_transient( 'mbrreg_activation_success' );
+
+if ( $activation_error ) {
+	delete_transient( 'mbrreg_activation_error' );
+}
+if ( $activation_success ) {
+	delete_transient( 'mbrreg_activation_success' );
+}
+?>
+
+<div class="mbrreg-form-container">
+	<?php if ( $activation_error ) : ?>
+		<div class="mbrreg-message mbrreg-error"><?php echo esc_html( $activation_error ); ?></div>
+	<?php endif; ?>
+
+	<?php if ( $activation_success ) : ?>
+		<div class="mbrreg-message mbrreg-success"><?php echo esc_html( $activation_success ); ?></div>
+	<?php endif; ?>
+
+	<form id="mbrreg-register-form" class="mbrreg-form" method="post">
+		<h2 class="mbrreg-form-title"><?php esc_html_e( 'Register', 'member-registration-plugin' ); ?></h2>
+
+		<div class="mbrreg-form-messages"></div>
+
+		<!-- Account Details -->
+		<fieldset class="mbrreg-fieldset">
+			<legend><?php esc_html_e( 'Account Details', 'member-registration-plugin' ); ?></legend>
+
+			<div class="mbrreg-form-row">
+				<label for="mbrreg-email">
+					<?php esc_html_e( 'Email Address', 'member-registration-plugin' ); ?>
+					<span class="required">*</span>
+				</label>
+				<input type="email" id="mbrreg-email" name="email" required>
+			</div>
+
+			<div class="mbrreg-form-row">
+				<label for="mbrreg-username">
+					<?php esc_html_e( 'Username', 'member-registration-plugin' ); ?>
+				</label>
+				<input type="text" id="mbrreg-username" name="username">
+				<span class="mbrreg-field-note"><?php esc_html_e( 'Leave blank to auto-generate from email.', 'member-registration-plugin' ); ?></span>
+			</div>
+
+			<div class="mbrreg-form-row">
+				<label for="mbrreg-password">
+					<?php esc_html_e( 'Password', 'member-registration-plugin' ); ?>
+					<span class="required">*</span>
+				</label>
+				<input type="password" id="mbrreg-password" name="password" required minlength="8">
+			</div>
+
+			<div class="mbrreg-form-row">
+				<label for="mbrreg-password-confirm">
+					<?php esc_html_e( 'Confirm Password', 'member-registration-plugin' ); ?>
+					<span class="required">*</span>
+				</label>
+				<input type="password" id="mbrreg-password-confirm" name="password_confirm" required minlength="8">
+			</div>
+		</fieldset>
+
+		<!-- Personal Details (only first_name and last_name) -->
+		<fieldset class="mbrreg-fieldset">
+			<legend><?php esc_html_e( 'Personal Details', 'member-registration-plugin' ); ?></legend>
+
+			<div class="mbrreg-form-row">
+				<label for="mbrreg-first-name">
+					<?php esc_html_e( 'First Name', 'member-registration-plugin' ); ?>
+					<?php if ( get_option( 'mbrreg_require_first_name', false ) ) : ?>
+						<span class="required">*</span>
+					<?php endif; ?>
+				</label>
+				<input type="text" id="mbrreg-first-name" name="first_name" <?php echo get_option( 'mbrreg_require_first_name', false ) ? 'required' : ''; ?>>
+			</div>
+
+			<div class="mbrreg-form-row">
+				<label for="mbrreg-last-name">
+					<?php esc_html_e( 'Last Name', 'member-registration-plugin' ); ?>
+					<?php if ( get_option( 'mbrreg_require_last_name', false ) ) : ?>
+						<span class="required">*</span>
+					<?php endif; ?>
+				</label>
+				<input type="text" id="mbrreg-last-name" name="last_name" <?php echo get_option( 'mbrreg_require_last_name', false ) ? 'required' : ''; ?>>
+			</div>
+		</fieldset>
+
+		<!-- Custom Fields (only user-editable) -->
+		<?php if ( ! empty( $custom_fields ) ) : ?>
+			<fieldset class="mbrreg-fieldset">
+				<legend><?php esc_html_e( 'Additional Information', 'member-registration-plugin' ); ?></legend>
+
+				<?php foreach ( $custom_fields as $field ) : ?>
+					<div class="mbrreg-form-row">
+						<label for="mbrreg-custom-<?php echo esc_attr( $field->id ); ?>">
+							<?php echo esc_html( $field->field_label ); ?>
+							<?php if ( $field->is_required ) : ?>
+								<span class="required">*</span>
+							<?php endif; ?>
+						</label>
+						<?php echo $custom_fields_handler->render_field_input( $field ); // phpcs:ignore ?>
+					</div>
+				<?php endforeach; ?>
+			</fieldset>
+		<?php endif; ?>
+
+		<div class="mbrreg-form-row">
+			<button type="submit" class="mbrreg-button mbrreg-button-primary">
+				<?php esc_html_e( 'Register', 'member-registration-plugin' ); ?>
+			</button>
+		</div>
+	</form>
+</div>
+```
+
+---
+
+## public/partials/mbrreg-member-dashboard.php (UPDATED - Simplified)
+
+```php
+<?php
+/**
+ * Member dashboard template.
+ *
+ * @package Member_Registration_Plugin
+ * @subpackage Member_Registration_Plugin/public/partials
+ * @since 1.0.0
+ */
+
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
+
+// Get custom fields instance for rendering.
+$custom_fields_handler = new Mbrreg_Custom_Fields();
+$statuses              = Mbrreg_Member::get_statuses();
+?>
+
+<div class="mbrreg-dashboard-container">
+	<div class="mbrreg-dashboard-header">
+		<h2>
+			<?php
+			printf(
+				/* translators: %s: User display name */
+				esc_html__( 'Welcome, %s!', 'member-registration-plugin' ),
+				esc_html( $current_user->display_name )
+			);
+			?>
+		</h2>
+
+		<div class="mbrreg-dashboard-actions">
+			<?php if ( $is_admin ) : ?>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=mbrreg-members' ) ); ?>" class="mbrreg-button mbrreg-button-secondary">
+					<?php esc_html_e( 'Manage Members', 'member-registration-plugin' ); ?>
+				</a>
+			<?php endif; ?>
+
+			<button type="button" class="mbrreg-button mbrreg-button-secondary mbrreg-logout-btn">
+				<?php esc_html_e( 'Log Out', 'member-registration-plugin' ); ?>
+			</button>
+		</div>
+	</div>
+
+	<div class="mbrreg-form-messages"></div>
+
+	<?php if ( ! empty( $members ) ) : ?>
+		<div class="mbrreg-account-info">
+			<p>
+				<strong><?php esc_html_e( 'Account Email:', 'member-registration-plugin' ); ?></strong>
+				<?php echo esc_html( $current_user->user_email ); ?>
+			</p>
+			<p>
+				<strong><?php esc_html_e( 'Registered Members:', 'member-registration-plugin' ); ?></strong>
+				<?php echo esc_html( count( $members ) ); ?>
+			</p>
+		</div>
+
+		<?php foreach ( $members as $index => $member ) : ?>
+			<div class="mbrreg-member-card" data-member-id="<?php echo esc_attr( $member->id ); ?>">
+				<div class="mbrreg-member-card-header">
+					<h3>
+						<?php
+						$member_name = trim( $member->first_name . ' ' . $member->last_name );
+						if ( empty( $member_name ) ) {
+							$member_name = sprintf(
+								/* translators: %d: Member number */
+								__( 'Member #%d', 'member-registration-plugin' ),
+								$index + 1
+							);
+						}
+						echo esc_html( $member_name );
+						?>
+					</h3>
+					<span class="mbrreg-status mbrreg-status-<?php echo esc_attr( $member->status ); ?>">
+						<?php echo esc_html( $statuses[ $member->status ] ); ?>
+					</span>
+				</div>
+
+				<form class="mbrreg-profile-form mbrreg-form" method="post" data-member-id="<?php echo esc_attr( $member->id ); ?>">
+					<input type="hidden" name="member_id" value="<?php echo esc_attr( $member->id ); ?>">
+
+					<!-- Personal Details (only first_name and last_name) -->
+					<fieldset class="mbrreg-fieldset">
+						<legend><?php esc_html_e( 'Personal Details', 'member-registration-plugin' ); ?></legend>
+
+						<div class="mbrreg-form-row">
+							<label for="mbrreg-first-name-<?php echo esc_attr( $member->id ); ?>">
+								<?php esc_html_e( 'First Name', 'member-registration-plugin' ); ?>
+								<?php if ( get_option( 'mbrreg_require_first_name', false ) ) : ?>
+									<span class="required">*</span>
+								<?php endif; ?>
+							</label>
+							<input type="text" id="mbrreg-first-name-<?php echo esc_attr( $member->id ); ?>" name="first_name" value="<?php echo esc_attr( $member->first_name ); ?>" <?php echo get_option( 'mbrreg_require_first_name', false ) ? 'required' : ''; ?>>
+						</div>
+
+						<div class="mbrreg-form-row">
+							<label for="mbrreg-last-name-<?php echo esc_attr( $member->id ); ?>">
+								<?php esc_html_e( 'Last Name', 'member-registration-plugin' ); ?>
+								<?php if ( get_option( 'mbrreg_require_last_name', false ) ) : ?>
+									<span class="required">*</span>
+								<?php endif; ?>
+							</label>
+							<input type="text" id="mbrreg-last-name-<?php echo esc_attr( $member->id ); ?>" name="last_name" value="<?php echo esc_attr( $member->last_name ); ?>" <?php echo get_option( 'mbrreg_require_last_name', false ) ? 'required' : ''; ?>>
+						</div>
+					</fieldset>
+
+					<!-- Custom Fields -->
+					<?php if ( ! empty( $custom_fields ) ) : ?>
+						<fieldset class="mbrreg-fieldset">
+							<legend><?php esc_html_e( 'Additional Information', 'member-registration-plugin' ); ?></legend>
+
+							<?php foreach ( $custom_fields as $field ) : ?>
+								<?php
+								$value       = isset( $member->custom_fields[ $field->id ] ) ? $member->custom_fields[ $field->id ] : '';
+								$is_readonly = $field->is_admin_only;
+								?>
+								<div class="mbrreg-form-row">
+									<label for="mbrreg-custom-<?php echo esc_attr( $field->id ); ?>-<?php echo esc_attr( $member->id ); ?>">
+										<?php echo esc_html( $field->field_label ); ?>
+										<?php if ( $field->is_required && ! $is_readonly ) : ?>
+											<span class="required">*</span>
+										<?php endif; ?>
+										<?php if ( $is_readonly ) : ?>
+											<span class="mbrreg-readonly-badge"><?php esc_html_e( '(View only)', 'member-registration-plugin' ); ?></span>
+										<?php endif; ?>
+									</label>
+									<?php
+									echo $custom_fields_handler->render_field_input( // phpcs:ignore
+										$field,
+										$value,
+										array(
+											'id_prefix' => 'mbrreg-custom-' . $member->id . '-',
+											'readonly'  => $is_readonly,
+										)
+									);
+									?>
+								</div>
+							<?php endforeach; ?>
+						</fieldset>
+					<?php endif; ?>
+
+					<div class="mbrreg-form-row mbrreg-form-actions">
+						<button type="submit" class="mbrreg-button mbrreg-button-primary">
+							<?php esc_html_e( 'Update Profile', 'member-registration-plugin' ); ?>
+						</button>
+
+						<?php if ( 'active' === $member->status ) : ?>
+							<button type="button" class="mbrreg-button mbrreg-button-danger mbrreg-deactivate-btn" data-member-id="<?php echo esc_attr( $member->id ); ?>">
+								<?php esc_html_e( 'Deactivate Membership', 'member-registration-plugin' ); ?>
+							</button>
+						<?php endif; ?>
+					</div>
+				</form>
+			</div>
+		<?php endforeach; ?>
+
+		<!-- Add Another Member Section -->
+		<?php if ( $allow_multiple ) : ?>
+			<div class="mbrreg-add-member-section">
+				<button type="button" class="mbrreg-button mbrreg-button-secondary mbrreg-toggle-add-member">
+					<?php esc_html_e( '+ Add Another Member', 'member-registration-plugin' ); ?>
+				</button>
+
+				<div class="mbrreg-add-member-form-container" style="display: none;">
+					<h3><?php esc_html_e( 'Add New Member', 'member-registration-plugin' ); ?></h3>
+					<p class="mbrreg-info"><?php esc_html_e( 'Add another family member to your account.', 'member-registration-plugin' ); ?></p>
+
+					<form id="mbrreg-add-member-form" class="mbrreg-form" method="post">
+						<fieldset class="mbrreg-fieldset">
+							<legend><?php esc_html_e( 'Personal Details', 'member-registration-plugin' ); ?></legend>
+
+							<div class="mbrreg-form-row">
+								<label for="mbrreg-add-first-name">
+									<?php esc_html_e( 'First Name', 'member-registration-plugin' ); ?>
+									<?php if ( get_option( 'mbrreg_require_first_name', false ) ) : ?>
+										<span class="required">*</span>
+									<?php endif; ?>
+								</label>
+								<input type="text" id="mbrreg-add-first-name" name="first_name" <?php echo get_option( 'mbrreg_require_first_name', false ) ? 'required' : ''; ?>>
+							</div>
+
+							<div class="mbrreg-form-row">
+								<label for="mbrreg-add-last-name">
+									<?php esc_html_e( 'Last Name', 'member-registration-plugin' ); ?>
+									<?php if ( get_option( 'mbrreg_require_last_name', false ) ) : ?>
+										<span class="required">*</span>
+									<?php endif; ?>
+								</label>
+								<input type="text" id="mbrreg-add-last-name" name="last_name" <?php echo get_option( 'mbrreg_require_last_name', false ) ? 'required' : ''; ?>>
+							</div>
+						</fieldset>
+
+						<!-- Custom Fields for new member -->
+						<?php if ( ! empty( $user_editable_fields ) ) : ?>
+							<fieldset class="mbrreg-fieldset">
+								<legend><?php esc_html_e( 'Additional Information', 'member-registration-plugin' ); ?></legend>
+
+								<?php foreach ( $user_editable_fields as $field ) : ?>
+									<div class="mbrreg-form-row">
+										<label for="mbrreg-add-custom-<?php echo esc_attr( $field->id ); ?>">
+											<?php echo esc_html( $field->field_label ); ?>
+											<?php if ( $field->is_required ) : ?>
+												<span class="required">*</span>
+											<?php endif; ?>
+										</label>
+										<?php
+										echo $custom_fields_handler->render_field_input( // phpcs:ignore
+											$field,
+											'',
+											array( 'id_prefix' => 'mbrreg-add-custom-' )
+										);
+										?>
+									</div>
+								<?php endforeach; ?>
+							</fieldset>
+						<?php endif; ?>
+
+						<div class="mbrreg-form-row mbrreg-form-actions">
+							<button type="submit" class="mbrreg-button mbrreg-button-primary">
+								<?php esc_html_e( 'Add Member', 'member-registration-plugin' ); ?>
+							</button>
+							<button type="button" class="mbrreg-button mbrreg-button-secondary mbrreg-cancel-add-member">
+								<?php esc_html_e( 'Cancel', 'member-registration-plugin' ); ?>
+							</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		<?php endif; ?>
+
+	<?php else : ?>
+		<p class="mbrreg-message mbrreg-warning">
+			<?php esc_html_e( 'No member profile found. Please contact an administrator.', 'member-registration-plugin' ); ?>
+		</p>
+	<?php endif; ?>
+</div>
+```
+
+---
+
+## admin/partials/mbrreg-admin-member-edit.php (UPDATED - Simplified)
+
+```php
+<?php
+/**
+ * Admin member edit page template.
+ *
+ * @package Member_Registration_Plugin
+ * @subpackage Member_Registration_Plugin/admin/partials
+ * @since 1.0.0
+ */
+
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
+
+// Get custom fields handler for rendering.
+$custom_fields_handler = new Mbrreg_Custom_Fields();
+$statuses              = Mbrreg_Member::get_statuses();
+
+// Count other members in this account.
+$database        = new Mbrreg_Database();
+$account_members = $database->get_members_by_user_id( $member->user_id );
+?>
+
+<div class="wrap mbrreg-admin-wrap">
+	<h1>
+		<?php esc_html_e( 'Edit Member', 'member-registration-plugin' ); ?>
+		<a href="<?php echo esc_url( admin_url( 'admin.php?page=mbrreg-members' ) ); ?>" class="page-title-action">
+			<?php esc_html_e( 'Back to Members', 'member-registration-plugin' ); ?>
+		</a>
+	</h1>
+
+	<div id="mbrreg-admin-messages"></div>
+
+	<?php if ( count( $account_members ) > 1 ) : ?>
+		<div class="notice notice-info">
+			<p>
+				<?php
+				printf(
+					/* translators: 1: Number of members, 2: Account email */
+					esc_html__( 'This user account (%2$s) has %1$d registered members.', 'member-registration-plugin' ),
+					count( $account_members ),
+					esc_html( $member->email )
+				);
+				?>
+			</p>
+		</div>
+	<?php endif; ?>
+
+	<form id="mbrreg-edit-member-form" method="post" class="mbrreg-admin-form">
+		<input type="hidden" name="member_id" value="<?php echo esc_attr( $member->id ); ?>">
+
+		<div class="mbrreg-admin-columns">
+			<!-- Main Content -->
+			<div class="mbrreg-admin-column mbrreg-admin-column-wide">
+				<div class="mbrreg-admin-card">
+					<h2><?php esc_html_e( 'Personal Information', 'member-registration-plugin' ); ?></h2>
+
+					<table class="form-table">
+						<tr>
+							<th scope="row">
+								<label for="first_name"><?php esc_html_e( 'First Name', 'member-registration-plugin' ); ?></label>
+							</th>
+							<td>
+								<input type="text" name="first_name" id="first_name" value="<?php echo esc_attr( $member->first_name ); ?>" class="regular-text">
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<label for="last_name"><?php esc_html_e( 'Last Name', 'member-registration-plugin' ); ?></label>
+							</th>
+							<td>
+								<input type="text" name="last_name" id="last_name" value="<?php echo esc_attr( $member->last_name ); ?>" class="regular-text">
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<label for="email"><?php esc_html_e( 'Email', 'member-registration-plugin' ); ?></label>
+							</th>
+							<td>
+								<input type="email" name="email" id="email" value="<?php echo esc_attr( $member->email ); ?>" class="regular-text">
+								<p class="description"><?php esc_html_e( 'Changing this will update the WordPress user email for the account owner.', 'member-registration-plugin' ); ?></p>
+							</td>
+						</tr>
+					</table>
+				</div>
+
+				<!-- Custom Fields -->
+				<?php if ( ! empty( $custom_fields ) ) : ?>
+					<div class="mbrreg-admin-card">
+						<h2><?php esc_html_e( 'Custom Fields', 'member-registration-plugin' ); ?></h2>
+						<table class="form-table">
+							<?php foreach ( $custom_fields as $field ) : ?>
+								<?php $value = isset( $member->custom_fields[ $field->id ] ) ? $member->custom_fields[ $field->id ] : ''; ?>
+								<tr>
+									<th scope="row">
+										<label for="custom_<?php echo esc_attr( $field->id ); ?>">
+											<?php echo esc_html( $field->field_label ); ?>
+											<?php if ( $field->is_admin_only ) : ?>
+												<span class="dashicons dashicons-lock" style="color: #d63638; font-size: 14px;" title="<?php esc_attr_e( 'Admin only', 'member-registration-plugin' ); ?>"></span>
+											<?php endif; ?>
+										</label>
+									</th>
+									<td>
+										<?php
+										echo $custom_fields_handler->render_field_input( // phpcs:ignore
+											$field,
+											$value,
+											array( 'class' => 'regular-text' )
+										);
+										?>
+										<?php if ( $field->is_admin_only ) : ?>
+											<p class="description"><?php esc_html_e( 'This field can only be edited by administrators.', 'member-registration-plugin' ); ?></p>
+										<?php endif; ?>
+									</td>
+								</tr>
+							<?php endforeach; ?>
+						</table>
+					</div>
+				<?php endif; ?>
+			</div>
+
+			<!-- Sidebar -->
+			<div class="mbrreg-admin-column">
+				<div class="mbrreg-admin-card">
+					<h2><?php esc_html_e( 'Member Status', 'member-registration-plugin' ); ?></h2>
+
+					<table class="form-table">
+						<tr>
+							<th scope="row">
+								<label for="status"><?php esc_html_e( 'Status', 'member-registration-plugin' ); ?></label>
+							</th>
+							<td>
+								<select name="status" id="status">
+									<?php foreach ( $statuses as $value => $label ) : ?>
+										<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $member->status, $value ); ?>>
+											<?php echo esc_html( $label ); ?>
+										</option>
+									<?php endforeach; ?>
+								</select>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Member Admin', 'member-registration-plugin' ); ?></th>
+							<td>
+								<label>
+									<input type="checkbox" name="is_admin" value="1" <?php checked( $member->is_admin ); ?>>
+									<?php esc_html_e( 'Can manage members', 'member-registration-plugin' ); ?>
+								</label>
+								<p class="description"><?php esc_html_e( 'Member admins can view and manage other members from the frontend.', 'member-registration-plugin' ); ?></p>
+							</td>
+						</tr>
+					</table>
+				</div>
+
+				<div class="mbrreg-admin-card">
+					<h2><?php esc_html_e( 'Account Information', 'member-registration-plugin' ); ?></h2>
+					<table class="form-table">
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Username', 'member-registration-plugin' ); ?></th>
+							<td><code><?php echo esc_html( $member->username ); ?></code></td>
+						</tr>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Member ID', 'member-registration-plugin' ); ?></th>
+							<td><?php echo esc_html( $member->id ); ?></td>
+						</tr>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'WP User ID', 'member-registration-plugin' ); ?></th>
+							<td>
+								<a href="<?php echo esc_url( admin_url( 'user-edit.php?user_id=' . $member->user_id ) ); ?>">
+									<?php echo esc_html( $member->user_id ); ?>
+								</a>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Registered', 'member-registration-plugin' ); ?></th>
+							<td><?php echo esc_html( mbrreg_format_date( $member->created_at, get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) ); ?></td>
+						</tr>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Last Updated', 'member-registration-plugin' ); ?></th>
+							<td><?php echo esc_html( mbrreg_format_date( $member->updated_at, get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) ); ?></td>
+						</tr>
+					</table>
+				</div>
+
+				<div class="mbrreg-admin-card">
+					<h2><?php esc_html_e( 'Actions', 'member-registration-plugin' ); ?></h2>
+					<p>
+						<button type="submit" class="button button-primary button-large"><?php esc_html_e( 'Update Member', 'member-registration-plugin' ); ?></button>
+						<span class="spinner"></span>
+					</p>
+					<p>
+						<button type="button" class="button button-link-delete mbrreg-delete-member" data-member-id="<?php echo esc_attr( $member->id ); ?>">
+							<?php esc_html_e( 'Delete Member', 'member-registration-plugin' ); ?>
+						</button>
+					</p>
+
+					<?php if ( 'pending' === $member->status ) : ?>
+						<p>
+							<button type="button" class="button mbrreg-resend-activation" data-member-id="<?php echo esc_attr( $member->id ); ?>">
+								<?php esc_html_e( 'Resend Activation Email', 'member-registration-plugin' ); ?>
+							</button>
+						</p>
+					<?php endif; ?>
+				</div>
+			</div>
+		</div>
+	</form>
+</div>
+```
+
+---
+
+## admin/partials/mbrreg-admin-members.php (UPDATED)
+
+```php
+<?php
+/**
+ * Admin members list page template.
+ *
+ * @package Member_Registration_Plugin
+ * @subpackage Member_Registration_Plugin/admin/partials
+ * @since 1.0.0
+ */
+
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
+
+// Get filter parameters.
+$status   = isset( $_GET['status'] ) ? sanitize_text_field( wp_unslash( $_GET['status'] ) ) : '';
+$search   = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
+$paged    = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
+$per_page = 20;
+
+// Build query args.
+$args = array(
+	'status' => $status,
+	'search' => $search,
+	'limit'  => $per_page,
+	'offset' => ( $paged - 1 ) * $per_page,
+);
+
+// Get members.
+$database       = new Mbrreg_Database();
+$custom_fields  = new Mbrreg_Custom_Fields();
+$member_handler = new Mbrreg_Member( $database, $custom_fields, new Mbrreg_Email() );
+$statuses       = Mbrreg_Member::get_statuses();
+
+$members       = $member_handler->get_all( $args );
+$total_members = $member_handler->count( $args );
+$total_pages   = ceil( $total_members / $per_page );
+
+// Count by status.
+$count_all      = $member_handler->count( array( 'search' => $search ) );
+$count_active   = $member_handler->count( array( 'status' => 'active', 'search' => $search ) );
+$count_inactive = $member_handler->count( array( 'status' => 'inactive', 'search' => $search ) );
+$count_pending  = $member_handler->count( array( 'status' => 'pending', 'search' => $search ) );
+?>
+
+<div class="wrap mbrreg-admin-wrap">
+	<h1 class="wp-heading-inline"><?php esc_html_e( 'Members', 'member-registration-plugin' ); ?></h1>
+	<hr class="wp-header-end">
+
+	<!-- Status Filter -->
+	<ul class="subsubsub">
+		<li>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=mbrreg-members' ) ); ?>" class="<?php echo '' === $status ? 'current' : ''; ?>">
+				<?php esc_html_e( 'All', 'member-registration-plugin' ); ?>
+				<span class="count">(<?php echo esc_html( $count_all ); ?>)</span>
+			</a> |
+		</li>
+		<li>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=mbrreg-members&status=active' ) ); ?>" class="<?php echo 'active' === $status ? 'current' : ''; ?>">
+				<?php esc_html_e( 'Active', 'member-registration-plugin' ); ?>
+				<span class="count">(<?php echo esc_html( $count_active ); ?>)</span>
+			</a> |
+		</li>
+		<li>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=mbrreg-members&status=inactive' ) ); ?>" class="<?php echo 'inactive' === $status ? 'current' : ''; ?>">
+				<?php esc_html_e( 'Inactive', 'member-registration-plugin' ); ?>
+				<span class="count">(<?php echo esc_html( $count_inactive ); ?>)</span>
+			</a> |
+		</li>
+		<li>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=mbrreg-members&status=pending' ) ); ?>" class="<?php echo 'pending' === $status ? 'current' : ''; ?>">
+				<?php esc_html_e( 'Pending', 'member-registration-plugin' ); ?>
+				<span class="count">(<?php echo esc_html( $count_pending ); ?>)</span>
+			</a>
+		</li>
+	</ul>
+
+	<!-- Search Form -->
+	<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" class="search-form">
+		<input type="hidden" name="page" value="mbrreg-members">
+		<?php if ( $status ) : ?>
+			<input type="hidden" name="status" value="<?php echo esc_attr( $status ); ?>">
+		<?php endif; ?>
+		<p class="search-box">
+			<label class="screen-reader-text" for="member-search-input"><?php esc_html_e( 'Search Members', 'member-registration-plugin' ); ?></label>
+			<input type="search" id="member-search-input" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search members...', 'member-registration-plugin' ); ?>">
+			<input type="submit" id="search-submit" class="button" value="<?php esc_attr_e( 'Search', 'member-registration-plugin' ); ?>">
+		</p>
+	</form>
+
+	<!-- Bulk Actions Form -->
+	<form id="mbrreg-members-form" method="post">
+		<div class="tablenav top">
+			<div class="alignleft actions bulkactions">
+				<select name="bulk_action" id="bulk-action-selector">
+					<option value=""><?php esc_html_e( 'Bulk Actions', 'member-registration-plugin' ); ?></option>
+					<option value="activate"><?php esc_html_e( 'Activate', 'member-registration-plugin' ); ?></option>
+					<option value="deactivate"><?php esc_html_e( 'Deactivate', 'member-registration-plugin' ); ?></option>
+					<option value="delete"><?php esc_html_e( 'Delete Members', 'member-registration-plugin' ); ?></option>
+					<option value="delete_with_user"><?php esc_html_e( 'Delete Members + Users', 'member-registration-plugin' ); ?></option>
+				</select>
+				<button type="button" class="button mbrreg-bulk-action-btn"><?php esc_html_e( 'Apply', 'member-registration-plugin' ); ?></button>
+			</div>
+
+			<?php if ( $total_pages > 1 ) : ?>
+				<div class="tablenav-pages">
+					<span class="displaying-num">
+						<?php
+						printf(
+							/* translators: %s: Number of members */
+							esc_html( _n( '%s member', '%s members', $total_members, 'member-registration-plugin' ) ),
+							number_format_i18n( $total_members )
+						);
+						?>
+					</span>
+					<span class="pagination-links">
+						<?php
+						$page_links = paginate_links(
+							array(
+								'base'      => add_query_arg( 'paged', '%#%' ),
+								'format'    => '',
+								'prev_text' => '&laquo;',
+								'next_text' => '&raquo;',
+								'total'     => $total_pages,
+								'current'   => $paged,
+							)
+						);
+						echo wp_kses_post( $page_links );
+						?>
+					</span>
+				</div>
+			<?php endif; ?>
+		</div>
+
+		<!-- Members Table -->
+		<table class="wp-list-table widefat fixed striped members">
+			<thead>
+				<tr>
+					<td class="manage-column column-cb check-column">
+						<input type="checkbox" id="cb-select-all">
+					</td>
+					<th scope="col" class="manage-column"><?php esc_html_e( 'Name', 'member-registration-plugin' ); ?></th>
+					<th scope="col" class="manage-column"><?php esc_html_e( 'Email', 'member-registration-plugin' ); ?></th>
+					<th scope="col" class="manage-column"><?php esc_html_e( 'Account Owner', 'member-registration-plugin' ); ?></th>
+					<th scope="col" class="manage-column"><?php esc_html_e( 'Status', 'member-registration-plugin' ); ?></th>
+					<th scope="col" class="manage-column"><?php esc_html_e( 'Admin', 'member-registration-plugin' ); ?></th>
+					<th scope="col" class="manage-column"><?php esc_html_e( 'Registered', 'member-registration-plugin' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php if ( ! empty( $members ) ) : ?>
+					<?php foreach ( $members as $member ) : ?>
+						<tr>
+							<th scope="row" class="check-column">
+								<input type="checkbox" name="member_ids[]" value="<?php echo esc_attr( $member->id ); ?>">
+							</th>
+							<td>
+								<strong>
+									<a href="<?php echo esc_url( admin_url( 'admin.php?page=mbrreg-members&action=edit&member_id=' . $member->id ) ); ?>">
+										<?php echo esc_html( $member->first_name . ' ' . $member->last_name ); ?>
+									</a>
+								</strong>
+								<div class="row-actions">
+									<span class="edit">
+										<a href="<?php echo esc_url( admin_url( 'admin.php?page=mbrreg-members&action=edit&member_id=' . $member->id ) ); ?>">
+											<?php esc_html_e( 'Edit', 'member-registration-plugin' ); ?>
+										</a> |
+									</span>
+									<?php if ( 'pending' === $member->status ) : ?>
+										<span class="resend">
+											<a href="#" class="mbrreg-resend-activation" data-member-id="<?php echo esc_attr( $member->id ); ?>">
+												<?php esc_html_e( 'Resend Activation', 'member-registration-plugin' ); ?>
+											</a> |
+										</span>
+									<?php endif; ?>
+									<span class="delete">
+										<a href="#" class="mbrreg-delete-member submitdelete" data-member-id="<?php echo esc_attr( $member->id ); ?>">
+											<?php esc_html_e( 'Delete', 'member-registration-plugin' ); ?>
+										</a>
+									</span>
+								</div>
+							</td>
+							<td><?php echo esc_html( $member->email ); ?></td>
+							<td>
+								<?php
+								$user = get_user_by( 'ID', $member->user_id );
+								echo esc_html( $user ? $user->user_login : '-' );
+								?>
+							</td>
+							<td>
+								<span class="mbrreg-status mbrreg-status-<?php echo esc_attr( $member->status ); ?>">
+									<?php echo esc_html( $statuses[ $member->status ] ); ?>
+								</span>
+							</td>
+							<td>
+								<?php if ( $member->is_admin ) : ?>
+									<span class="dashicons dashicons-yes-alt" style="color: green;" title="<?php esc_attr_e( 'Member Admin', 'member-registration-plugin' ); ?>"></span>
+								<?php else : ?>
+									<span class="dashicons dashicons-minus" style="color: #999;"></span>
+								<?php endif; ?>
+							</td>
+							<td><?php echo esc_html( mbrreg_format_date( $member->created_at ) ); ?></td>
+						</tr>
+					<?php endforeach; ?>
+				<?php else : ?>
+					<tr>
+						<td colspan="7"><?php esc_html_e( 'No members found.', 'member-registration-plugin' ); ?></td>
+					</tr>
+				<?php endif; ?>
+			</tbody>
+		</table>
+
+		<div class="tablenav bottom">
+			<?php if ( $total_pages > 1 ) : ?>
+				<div class="tablenav-pages">
+					<span class="pagination-links">
+						<?php echo wp_kses_post( $page_links ); ?>
+					</span>
+				</div>
+			<?php endif; ?>
+		</div>
+	</form>
+</div>
+```
+
+---
+
+Now let me provide the **CSS fixes** and the **updated language file** in **Part 3**:
+
+## public/css/mbrreg-public.css (UPDATED - Fixed modal and input styling)
+
+```css
+/**
+ * Public styles for Member Registration Plugin.
+ *
+ * @package Member_Registration_Plugin
+ * @since 1.0.0
+ */
+
+/* Container Styles */
+.mbrreg-auth-container,
+.mbrreg-dashboard-container,
+.mbrreg-form-container {
+	max-width: 700px;
+	margin: 0 auto;
+	padding: 20px;
+}
+
+/* Tab Styles */
+.mbrreg-tabs {
+	display: flex;
+	border-bottom: 2px solid #ddd;
+	margin-bottom: 20px;
+}
+
+.mbrreg-tab {
+	padding: 12px 24px;
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 16px;
+	font-weight: 500;
+	color: #666;
+	border-bottom: 2px solid transparent;
+	margin-bottom: -2px;
+	transition: all 0.3s ease;
+}
+
+.mbrreg-tab:hover {
+	color: #333;
+}
+
+.mbrreg-tab-active {
+	color: #0073aa;
+	border-bottom-color: #0073aa;
+}
+
+.mbrreg-tab-content {
+	display: none;
+}
+
+.mbrreg-tab-content-active {
+	display: block;
+}
+
+/* Form Styles */
+.mbrreg-form {
+	background: #fff;
+	padding: 30px;
+	border-radius: 4px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.mbrreg-form-title {
+	margin: 0 0 25px;
+	padding-bottom: 15px;
+	border-bottom: 1px solid #eee;
+	font-size: 24px;
+	color: #333;
+}
+
+.mbrreg-fieldset {
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	padding: 20px;
+	margin-bottom: 25px;
+}
+
+.mbrreg-fieldset legend {
+	padding: 0 10px;
+	font-weight: 600;
+	color: #333;
+}
+
+.mbrreg-form-row {
+	margin-bottom: 20px;
+}
+
+.mbrreg-form-row label {
+	display: block;
+	margin-bottom: 8px;
+	font-weight: 500;
+	color: #333;
+}
+
+/* Input field styles - FIXED to fit form width */
+.mbrreg-form-row input[type="text"],
+.mbrreg-form-row input[type="email"],
+.mbrreg-form-row input[type="password"],
+.mbrreg-form-row input[type="tel"],
+.mbrreg-form-row input[type="date"],
+.mbrreg-form-row input[type="number"],
+.mbrreg-form-row textarea,
+.mbrreg-form-row select,
+.mbrreg-field-input {
+	width: 100%;
+	max-width: 100%;
+	padding: 12px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	font-size: 16px;
+	transition: border-color 0.3s ease;
+	box-sizing: border-box;
+}
+
+.mbrreg-form-row input:focus,
+.mbrreg-form-row textarea:focus,
+.mbrreg-form-row select:focus {
+	outline: none;
+	border-color: #0073aa;
+	box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.1);
+}
+
+.mbrreg-form-row input:disabled,
+.mbrreg-form-row input[readonly],
+.mbrreg-form-row textarea:disabled,
+.mbrreg-form-row textarea[readonly],
+.mbrreg-form-row select:disabled {
+	background-color: #f5f5f5;
+	cursor: not-allowed;
+	color: #666;
+}
+
+.mbrreg-checkbox-row label {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-weight: normal;
+}
+
+.mbrreg-radio-label {
+	display: block;
+	margin-bottom: 8px;
+	font-weight: normal;
+}
+
+.required {
+	color: #dc3545;
+}
+
+.mbrreg-field-note {
+	display: block;
+	margin-top: 5px;
+	font-size: 13px;
+	color: #666;
+}
+
+.mbrreg-readonly-badge {
+	font-size: 12px;
+	color: #666;
+	font-weight: normal;
+	font-style: italic;
+}
+
+/* Button Styles */
+.mbrreg-button {
+	display: inline-block;
+	padding: 12px 24px;
+	border: none;
+	border-radius: 4px;
+	font-size: 16px;
+	font-weight: 500;
+	cursor: pointer;
+	text-decoration: none;
+	transition: all 0.3s ease;
+}
+
+.mbrreg-button-primary {
+	background-color: #0073aa;
+	color: #fff;
+}
+
+.mbrreg-button-primary:hover {
+	background-color: #005a87;
+	color: #fff;
+}
+
+.mbrreg-button-secondary {
+	background-color: #f0f0f0;
+	color: #333;
+}
+
+.mbrreg-button-secondary:hover {
+	background-color: #e0e0e0;
+}
+
+.mbrreg-button-danger {
+	background-color: #dc3545;
+	color: #fff;
+}
+
+.mbrreg-button-danger:hover {
+	background-color: #c82333;
+}
+
+.mbrreg-button:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+/* Message Styles */
+.mbrreg-message {
+	padding: 12px 15px;
+	border-radius: 4px;
+	margin-bottom: 20px;
+}
+
+.mbrreg-success {
+	background-color: #d4edda;
+	color: #155724;
+	border: 1px solid #c3e6cb;
+}
+
+.mbrreg-error {
+	background-color: #f8d7da;
+	color: #721c24;
+	border: 1px solid #f5c6cb;
+}
+
+.mbrreg-warning {
+	background-color: #fff3cd;
+	color: #856404;
+	border: 1px solid #ffeeba;
+}
+
+.mbrreg-info {
+	background-color: #d1ecf1;
+	color: #0c5460;
+	border: 1px solid #bee5eb;
+}
+
+.mbrreg-form-messages:empty {
+	display: none;
+}
+
+/* Form Links */
+.mbrreg-form-links {
+	margin-top: 20px;
+	text-align: center;
+}
+
+.mbrreg-form-links a {
+	color: #0073aa;
+	text-decoration: none;
+}
+
+.mbrreg-form-links a:hover {
+	text-decoration: underline;
+}
+
+/* Dashboard Styles */
+.mbrreg-dashboard-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20px;
+	flex-wrap: wrap;
+	gap: 15px;
+}
+
+.mbrreg-dashboard-header h2 {
+	margin: 0;
+}
+
+.mbrreg-dashboard-actions {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.mbrreg-account-info {
+	background: #f9f9f9;
+	padding: 15px 20px;
+	border-radius: 4px;
+	margin-bottom: 25px;
+}
+
+.mbrreg-account-info p {
+	margin: 5px 0;
+}
+
+/* Member Card Styles */
+.mbrreg-member-card {
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	margin-bottom: 25px;
+	overflow: hidden;
+}
+
+.mbrreg-member-card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 15px 20px;
+	background: #f5f5f5;
+	border-bottom: 1px solid #ddd;
+}
+
+.mbrreg-member-card-header h3 {
+	margin: 0;
+	font-size: 18px;
+}
+
+.mbrreg-member-card .mbrreg-form {
+	border: none;
+	box-shadow: none;
+	border-radius: 0;
+}
+
+/* Status Badges */
+.mbrreg-status {
+	display: inline-block;
+	padding: 5px 12px;
+	border-radius: 15px;
+	font-size: 13px;
+	font-weight: 600;
+	text-transform: uppercase;
+}
+
+.mbrreg-status-active {
+	background-color: #d4edda;
+	color: #155724;
+}
+
+.mbrreg-status-inactive {
+	background-color: #f8d7da;
+	color: #721c24;
+}
+
+.mbrreg-status-pending {
+	background-color: #fff3cd;
+	color: #856404;
+}
+
+/* Add Member Section */
+.mbrreg-add-member-section {
+	margin-top: 30px;
+	padding-top: 20px;
+	border-top: 2px solid #eee;
+}
+
+.mbrreg-add-member-form-container {
+	margin-top: 20px;
+}
+
+.mbrreg-add-member-form-container h3 {
+	margin-bottom: 10px;
+}
+
+.mbrreg-add-member-form-container .mbrreg-info {
+	color: #666;
+	margin-bottom: 20px;
+}
+
+/* Form Actions */
+.mbrreg-form-actions {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+/* ==========================================
+   MODAL STYLES - FIXED FOR PROPER CENTERING
+   ========================================== */
+
+.mbrreg-modal-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0, 0, 0, 0.6);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 999999;
+	padding: 20px;
+	box-sizing: border-box;
+}
+
+.mbrreg-modal-dialog {
+	background: #fff;
+	border-radius: 8px;
+	width: 100%;
+	max-width: 450px;
+	max-height: calc(100vh - 40px);
+	overflow: auto;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+	animation: mbrreg-modal-appear 0.2s ease-out;
+	margin: 0 auto;
+}
+
+@keyframes mbrreg-modal-appear {
+	from {
+		opacity: 0;
+		transform: scale(0.95);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+.mbrreg-modal-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 15px 20px;
+	border-bottom: 1px solid #eee;
+}
+
+.mbrreg-modal-title {
+	margin: 0;
+	font-size: 18px;
+	color: #333;
+}
+
+.mbrreg-modal-close-btn {
+	background: none;
+	border: none;
+	font-size: 28px;
+	color: #999;
+	cursor: pointer;
+	padding: 0;
+	line-height: 1;
+	width: 30px;
+	height: 30px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.mbrreg-modal-close-btn:hover {
+	color: #333;
+}
+
+.mbrreg-modal-body {
+	padding: 20px;
+}
+
+.mbrreg-modal-message {
+	margin: 0;
+	color: #555;
+	line-height: 1.6;
+}
+
+.mbrreg-modal-footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	padding: 15px 20px;
+	border-top: 1px solid #eee;
+	background: #f9f9f9;
+}
+
+/* ==========================================
+   RESPONSIVE STYLES
+   ========================================== */
+
+@media screen and (max-width: 600px) {
+	.mbrreg-auth-container,
+	.mbrreg-dashboard-container,
+	.mbrreg-form-container {
+		padding: 10px;
+	}
+
+	.mbrreg-form {
+		padding: 20px 15px;
+	}
+
+	.mbrreg-fieldset {
+		padding: 15px;
+	}
+
+	.mbrreg-tab {
+		padding: 10px 16px;
+		font-size: 14px;
+	}
+
+	.mbrreg-dashboard-header {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.mbrreg-member-card-header {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 10px;
+	}
+
+	.mbrreg-form-actions {
+		flex-direction: column;
+	}
+
+	.mbrreg-button {
+		width: 100%;
+		text-align: center;
+	}
+
+	/* Modal responsive - full screen on mobile */
+	.mbrreg-modal-overlay {
+		padding: 0;
+		align-items: stretch;
+	}
+
+	.mbrreg-modal-dialog {
+		max-width: 100%;
+		max-height: 100%;
+		border-radius: 0;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.mbrreg-modal-body {
+		flex: 1;
+		overflow-y: auto;
+	}
+
+	.mbrreg-modal-footer {
+		flex-direction: column;
+	}
+
+	.mbrreg-modal-footer .mbrreg-button {
+		width: 100%;
+	}
+}
+
+/* Tablet adjustments */
+@media screen and (min-width: 601px) and (max-width: 900px) {
+	.mbrreg-modal-dialog {
+		max-width: 90%;
+	}
+}
+```
+
+---
+
+## admin/partials/mbrreg-admin-import-export.php (UPDATED)
+
+```php
+<?php
+/**
+ * Admin import/export page template.
+ *
+ * @package Member_Registration_Plugin
+ * @subpackage Member_Registration_Plugin/admin/partials
+ * @since 1.1.0
+ */
+
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
+
+$custom_fields = ( new Mbrreg_Custom_Fields() )->get_all();
+?>
+
+<div class="wrap mbrreg-admin-wrap">
+	<h1><?php esc_html_e( 'Import / Export Members', 'member-registration-plugin' ); ?></h1>
+
+	<div class="mbrreg-admin-sections">
+		<!-- Import Section -->
+		<div class="mbrreg-admin-section">
+			<h2><?php esc_html_e( 'Import Members', 'member-registration-plugin' ); ?></h2>
+			<p class="description">
+				<?php esc_html_e( 'Import members from a CSV file. An activation email will be sent to each imported member.', 'member-registration-plugin' ); ?>
+			</p>
+
+			<div class="mbrreg-import-instructions">
+				<h4><?php esc_html_e( 'CSV File Format', 'member-registration-plugin' ); ?></h4>
+				<p><?php esc_html_e( 'Your CSV file should have the following columns in order:', 'member-registration-plugin' ); ?></p>
+				<ol>
+					<li><strong><?php esc_html_e( 'Email', 'member-registration-plugin' ); ?></strong> (<?php esc_html_e( 'required', 'member-registration-plugin' ); ?>)</li>
+					<li><strong><?php esc_html_e( 'First Name', 'member-registration-plugin' ); ?></strong></li>
+					<li><strong><?php esc_html_e( 'Last Name', 'member-registration-plugin' ); ?></strong></li>
+					<?php foreach ( $custom_fields as $field ) : ?>
+						<li>
+							<strong><?php echo esc_html( $field->field_label ); ?></strong>
+							<?php if ( 'date' === $field->field_type ) : ?>
+								(<?php echo esc_html( mbrreg_get_date_placeholder() ); ?>)
+							<?php endif; ?>
+						</li>
+					<?php endforeach; ?>
+				</ol>
+				<p><strong><?php esc_html_e( 'Note:', 'member-registration-plugin' ); ?></strong> <?php esc_html_e( 'The first row should contain column headers and will be skipped during import.', 'member-registration-plugin' ); ?></p>
+			</div>
+
+			<form id="mbrreg-import-form" method="post" enctype="multipart/form-data" class="mbrreg-admin-form">
+				<table class="form-table">
+					<tr>
+						<th scope="row">
+							<label for="csv_file"><?php esc_html_e( 'CSV File', 'member-registration-plugin' ); ?></label>
+						</th>
+						<td>
+							<input type="file" name="csv_file" id="csv_file" accept=".csv" required>
+							<p class="description"><?php esc_html_e( 'Select a CSV file to import.', 'member-registration-plugin' ); ?></p>
+						</td>
+					</tr>
+				</table>
+
+				<div class="mbrreg-import-results" style="display: none;">
+					<h4><?php esc_html_e( 'Import Results', 'member-registration-plugin' ); ?></h4>
+					<div class="mbrreg-import-message"></div>
+				</div>
+
+				<p class="submit">
+					<button type="submit" class="button button-primary">
+						<?php esc_html_e( 'Import Members', 'member-registration-plugin' ); ?>
+					</button>
+					<span class="spinner"></span>
+				</p>
+			</form>
+
+			<div class="mbrreg-sample-csv">
+				<h4><?php esc_html_e( 'Download Sample CSV', 'member-registration-plugin' ); ?></h4>
+				<p><?php esc_html_e( 'Download a sample CSV file with the correct format:', 'member-registration-plugin' ); ?></p>
+				<a href="#" class="button" id="mbrreg-download-sample">
+					<?php esc_html_e( 'Download Sample CSV', 'member-registration-plugin' ); ?>
+				</a>
+			</div>
+		</div>
+
+		<!-- Export Section -->
+		<div class="mbrreg-admin-section">
+			<h2><?php esc_html_e( 'Export Members', 'member-registration-plugin' ); ?></h2>
+			<p class="description">
+				<?php esc_html_e( 'Export members to a CSV file for backup or external use.', 'member-registration-plugin' ); ?>
+			</p>
+
+			<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" class="mbrreg-admin-form">
+				<input type="hidden" name="page" value="mbrreg-import-export">
+				<input type="hidden" name="mbrreg_export" value="1">
+				<?php wp_nonce_field( 'mbrreg_export_csv', '_wpnonce', false ); ?>
+
+				<table class="form-table">
+					<tr>
+						<th scope="row">
+							<label for="export_status"><?php esc_html_e( 'Member Status', 'member-registration-plugin' ); ?></label>
+						</th>
+						<td>
+							<select name="status" id="export_status">
+								<option value=""><?php esc_html_e( 'All Members', 'member-registration-plugin' ); ?></option>
+								<option value="active"><?php esc_html_e( 'Active Only', 'member-registration-plugin' ); ?></option>
+								<option value="inactive"><?php esc_html_e( 'Inactive Only', 'member-registration-plugin' ); ?></option>
+								<option value="pending"><?php esc_html_e( 'Pending Only', 'member-registration-plugin' ); ?></option>
+							</select>
+						</td>
+					</tr>
+				</table>
+
+				<p class="submit">
+					<button type="submit" class="button button-primary">
+						<?php esc_html_e( 'Export Members', 'member-registration-plugin' ); ?>
+					</button>
+				</p>
+			</form>
+
+			<div class="mbrreg-export-info">
+				<h4><?php esc_html_e( 'Export Information', 'member-registration-plugin' ); ?></h4>
+				<p><?php esc_html_e( 'The exported CSV will include:', 'member-registration-plugin' ); ?></p>
+				<ul>
+					<li><?php esc_html_e( 'Member ID, Username, Email', 'member-registration-plugin' ); ?></li>
+					<li><?php esc_html_e( 'First Name, Last Name', 'member-registration-plugin' ); ?></li>
+					<li><?php esc_html_e( 'Status, Admin Status, Registration Date', 'member-registration-plugin' ); ?></li>
+					<li><?php esc_html_e( 'All custom field values', 'member-registration-plugin' ); ?></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+jQuery(document).ready(function($) {
+	// Download sample CSV.
+	$('#mbrreg-download-sample').on('click', function(e) {
+		e.preventDefault();
+
+		var headers = ['Email', 'First Name', 'Last Name'];
+		<?php foreach ( $custom_fields as $field ) : ?>
+		headers.push('<?php echo esc_js( $field->field_label ); ?>');
+		<?php endforeach; ?>
+
+		var sampleData = [
+			headers,
+			['john.doe@example.com', 'John', 'Doe'<?php foreach ( $custom_fields as $field ) : ?>, ''<?php endforeach; ?>],
+			['jane.smith@example.com', 'Jane', 'Smith'<?php foreach ( $custom_fields as $field ) : ?>, ''<?php endforeach; ?>]
+		];
+
+		var csvContent = sampleData.map(function(row) {
+			return row.map(function(cell) {
+				// Escape quotes and wrap in quotes if contains comma.
+				if (typeof cell === 'string' && (cell.indexOf(',') !== -1 || cell.indexOf('"') !== -1)) {
+					return '"' + cell.replace(/"/g, '""') + '"';
+				}
+				return cell;
+			}).join(',');
+		}).join('\n');
+
+		var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+		var link = document.createElement('a');
+		var url = URL.createObjectURL(blob);
+		link.setAttribute('href', url);
+		link.setAttribute('download', 'members-import-sample.csv');
+		link.style.visibility = 'hidden';
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	});
+});
+</script>
+```
+
+---
+
+## languages/member-registration-plugin-nl_NL.po (UPDATED - Added email translations)
+
+```po
+# Dutch translation for Member Registration Plugin.
+# Copyright (C) 2024
+# This file is distributed under the same license as the plugin.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Member Registration Plugin 1.2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 12:00+0000\n"
+"PO-Revision-Date: 2024-01-01 12:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: Dutch\n"
+"Language: nl_NL\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# Plugin Name
+msgid "Member Registration Plugin"
+msgstr "Leden Registratie Plugin"
+
+# General
+msgid "Members"
+msgstr "Leden"
+
+msgid "All Members"
+msgstr "Alle Leden"
+
+msgid "Member Registration"
+msgstr "Ledenregistratie"
+
+msgid "My Memberships"
+msgstr "Mijn Lidmaatschappen"
+
+msgid "Settings"
+msgstr "Instellingen"
+
+msgid "Custom Fields"
+msgstr "Aangepaste Velden"
+
+msgid "Import / Export"
+msgstr "Importeren / Exporteren"
+
+# Login Form
+msgid "Login"
+msgstr "Inloggen"
+
+msgid "Username or Email"
+msgstr "Gebruikersnaam of E-mail"
+
+msgid "Password"
+msgstr "Wachtwoord"
+
+msgid "Remember Me"
+msgstr "Onthoud mij"
+
+msgid "Log In"
+msgstr "Inloggen"
+
+msgid "Forgot your password?"
+msgstr "Wachtwoord vergeten?"
+
+msgid "Login successful!"
+msgstr "Succesvol ingelogd!"
+
+msgid "Invalid username or password."
+msgstr "Ongeldige gebruikersnaam of wachtwoord."
+
+msgid "Please enter your username and password."
+msgstr "Vul uw gebruikersnaam en wachtwoord in."
+
+# Registration Form
+msgid "Register"
+msgstr "Registreren"
+
+msgid "Account Details"
+msgstr "Accountgegevens"
+
+msgid "Email Address"
+msgstr "E-mailadres"
+
+msgid "Username"
+msgstr "Gebruikersnaam"
+
+msgid "Leave blank to auto-generate from email."
+msgstr "Laat leeg om automatisch te genereren op basis van e-mail."
+
+msgid "Confirm Password"
+msgstr "Bevestig Wachtwoord"
+
+msgid "Personal Details"
+msgstr "Persoonlijke Gegevens"
+
+msgid "First Name"
+msgstr "Voornaam"
+
+msgid "Last Name"
+msgstr "Achternaam"
+
+msgid "Additional Information"
+msgstr "Aanvullende Informatie"
+
+msgid "Registration successful! Please check your email to activate your account."
+msgstr "Registratie succesvol! Controleer uw e-mail om uw account te activeren."
+
+msgid "Registration is currently disabled."
+msgstr "Registratie is momenteel uitgeschakeld."
+
+msgid "This email address is already registered."
+msgstr "Dit e-mailadres is al geregistreerd."
+
+msgid "Email address is required."
+msgstr "E-mailadres is verplicht."
+
+msgid "Please enter a valid email address."
+msgstr "Voer een geldig e-mailadres in."
+
+msgid "Passwords do not match."
+msgstr "Wachtwoorden komen niet overeen."
+
+# Dashboard
+msgid "Welcome, %s!"
+msgstr "Welkom, %s!"
+
+msgid "Log Out"
+msgstr "Uitloggen"
+
+msgid "Manage Members"
+msgstr "Leden Beheren"
+
+msgid "Account Email:"
+msgstr "Account E-mail:"
+
+msgid "Registered Members:"
+msgstr "Geregistreerde Leden:"
+
+msgid "Member #%d"
+msgstr "Lid #%d"
+
+msgid "Update Profile"
+msgstr "Profiel Bijwerken"
+
+msgid "Deactivate Membership"
+msgstr "Lidmaatschap Deactiveren"
+
+msgid "Profile updated successfully!"
+msgstr "Profiel succesvol bijgewerkt!"
+
+msgid "+ Add Another Member"
+msgstr "+ Nog een Lid Toevoegen"
+
+msgid "Add New Member"
+msgstr "Nieuw Lid Toevoegen"
+
+msgid "Add another family member to your account."
+msgstr "Voeg nog een familielid toe aan uw account."
+
+msgid "Add Member"
+msgstr "Lid Toevoegen"
+
+msgid "Cancel"
+msgstr "Annuleren"
+
+msgid "Member added successfully! Please check your email to activate the membership."
+msgstr "Lid succesvol toegevoegd! Controleer uw e-mail om het lidmaatschap te activeren."
+
+msgid "Adding multiple members is not allowed."
+msgstr "Het toevoegen van meerdere leden is niet toegestaan."
+
+# Status
+msgid "Pending Activation"
+msgstr "Wacht op Activatie"
+
+msgid "Active"
+msgstr "Actief"
+
+msgid "Inactive"
+msgstr "Inactief"
+
+msgid "Status"
+msgstr "Status"
+
+# Confirmation Messages
+msgid "Confirm Action"
+msgstr "Actie Bevestigen"
+
+msgid "Are you sure you want to deactivate this membership? If this is your only active membership, you will be logged out."
+msgstr "Weet u zeker dat u dit lidmaatschap wilt deactiveren? Als dit uw enige actieve lidmaatschap is, wordt u uitgelogd."
+
+msgid "Are you sure you want to log out?"
+msgstr "Weet u zeker dat u wilt uitloggen?"
+
+msgid "Membership has been set to inactive."
+msgstr "Lidmaatschap is ingesteld op inactief."
+
+msgid "You have been logged out."
+msgstr "U bent uitgelogd."
+
+msgid "Confirm"
+msgstr "Bevestigen"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "Notice"
+msgstr "Melding"
+
+msgid "Error"
+msgstr "Fout"
+
+msgid "Success"
+msgstr "Succes"
+
+# Display Settings
+msgid "Display Settings"
+msgstr "Weergave Instellingen"
+
+msgid "Date Format"
+msgstr "Datumnotatie"
+
+msgid "European (DD/MM/YYYY)"
+msgstr "Europees (DD/MM/JJJJ)"
+
+msgid "US (MM/DD/YYYY)"
+msgstr "Amerikaans (MM/DD/JJJJ)"
+
+msgid "Choose how dates are displayed throughout the plugin."
+msgstr "Kies hoe datums worden weergegeven in de hele plugin."
+
+# Admin - Members List
+msgid "All"
+msgstr "Alle"
+
+msgid "Pending"
+msgstr "In Afwachting"
+
+msgid "Search Members"
+msgstr "Leden Zoeken"
+
+msgid "Search members..."
+msgstr "Leden zoeken..."
+
+msgid "Search"
+msgstr "Zoeken"
+
+msgid "Bulk Actions"
+msgstr "Bulkacties"
+
+msgid "Activate"
+msgstr "Activeren"
+
+msgid "Deactivate"
+msgstr "Deactiveren"
+
+msgid "Delete Members"
+msgstr "Leden Verwijderen"
+
+msgid "Delete Members + Users"
+msgstr "Leden + Gebruikers Verwijderen"
+
+msgid "Apply"
+msgstr "Toepassen"
+
+msgid "Name"
+msgstr "Naam"
+
+msgid "Email"
+msgstr "E-mail"
+
+msgid "Account Owner"
+msgstr "Accounteigenaar"
+
+msgid "Admin"
+msgstr "Beheerder"
+
+msgid "Registered"
+msgstr "Geregistreerd"
+
+msgid "Edit"
+msgstr "Bewerken"
+
+msgid "Delete"
+msgstr "Verwijderen"
+
+msgid "Resend Activation"
+msgstr "Activatie Opnieuw Versturen"
+
+msgid "No members found."
+msgstr "Geen leden gevonden."
+
+msgid "%s member"
+msgid_plural "%s members"
+msgstr[0] "%s lid"
+msgstr[1] "%s leden"
+
+# Admin - Edit Member
+msgid "Edit Member"
+msgstr "Lid Bewerken"
+
+msgid "Back to Members"
+msgstr "Terug naar Leden"
+
+msgid "Personal Information"
+msgstr "Persoonlijke Informatie"
+
+msgid "Member Status"
+msgstr "Lidstatus"
+
+msgid "Member Admin"
+msgstr "Lid Beheerder"
+
+msgid "Can manage members"
+msgstr "Kan leden beheren"
+
+msgid "Member admins can view and manage other members from the frontend."
+msgstr "Ledenadministrateurs kunnen andere leden bekijken en beheren vanuit de frontend."
+
+msgid "Account Information"
+msgstr "Accountinformatie"
+
+msgid "Member ID"
+msgstr "Lid ID"
+
+msgid "WP User ID"
+msgstr "WP Gebruiker ID"
+
+msgid "Last Updated"
+msgstr "Laatst Bijgewerkt"
+
+msgid "Actions"
+msgstr "Acties"
+
+msgid "Update Member"
+msgstr "Lid Bijwerken"
+
+msgid "Delete Member"
+msgstr "Lid Verwijderen"
+
+msgid "Resend Activation Email"
+msgstr "Activatie E-mail Opnieuw Versturen"
+
+msgid "Member updated successfully!"
+msgstr "Lid succesvol bijgewerkt!"
+
+msgid "Member deleted successfully!"
+msgstr "Lid succesvol verwijderd!"
+
+msgid "Member not found."
+msgstr "Lid niet gevonden."
+
+msgid "This user account (%2$s) has %1$d registered members."
+msgstr "Dit gebruikersaccount (%2$s) heeft %1$d geregistreerde leden."
+
+# Admin - Custom Fields
+msgid "Existing Fields"
+msgstr "Bestaande Velden"
+
+msgid "Order"
+msgstr "Volgorde"
+
+msgid "Label"
+msgstr "Label"
+
+msgid "Type"
+msgstr "Type"
+
+msgid "Required"
+msgstr "Verplicht"
+
+msgid "Admin Only"
+msgstr "Alleen Beheerder"
+
+msgid "Admin only - users cannot edit"
+msgstr "Alleen beheerder - gebruikers kunnen niet bewerken"
+
+msgid "Editable by users"
+msgstr "Bewerkbaar door gebruikers"
+
+msgid "No custom fields have been created yet."
+msgstr "Er zijn nog geen aangepaste velden aangemaakt."
+
+msgid "Add New Field"
+msgstr "Nieuw Veld Toevoegen"
+
+msgid "Field Name"
+msgstr "Veldnaam"
+
+msgid "Unique identifier. Lowercase letters, numbers, and underscores only."
+msgstr "Unieke identificatie. Alleen kleine letters, cijfers en underscores."
+
+msgid "Field Label"
+msgstr "Veldlabel"
+
+msgid "The label displayed to users."
+msgstr "Het label dat aan gebruikers wordt getoond."
+
+msgid "Field Type"
+msgstr "Veldtype"
+
+msgid "Text"
+msgstr "Tekst"
+
+msgid "Textarea"
+msgstr "Tekstvak"
+
+msgid "Number"
+msgstr "Nummer"
+
+msgid "Date"
+msgstr "Datum"
+
+msgid "Dropdown"
+msgstr "Keuzelijst"
+
+msgid "Checkbox"
+msgstr "Selectievakje"
+
+msgid "Radio Buttons"
+msgstr "Keuzerondjes"
+
+msgid "Options"
+msgstr "Opties"
+
+msgid "Enter one option per line."
+msgstr "Voer één optie per regel in."
+
+msgid "Display Order"
+msgstr "Weergavevolgorde"
+
+msgid "Lower numbers display first."
+msgstr "Lagere nummers worden eerst weergegeven."
+
+msgid "Required field"
+msgstr "Verplicht veld"
+
+msgid "Admin only (users cannot edit)"
+msgstr "Alleen beheerder (gebruikers kunnen niet bewerken)"
+
+msgid "If checked, only administrators can view and edit this field. Users will see the value but cannot change it."
+msgstr "Indien aangevinkt, kunnen alleen beheerders dit veld bekijken en bewerken. Gebruikers zien de waarde maar kunnen deze niet wijzigen."
+
+msgid "Add Field"
+msgstr "Veld Toevoegen"
+
+msgid "Edit Custom Field"
+msgstr "Aangepast Veld Bewerken"
+
+msgid "Update Field"
+msgstr "Veld Bijwerken"
+
+msgid "Custom field created successfully!"
+msgstr "Aangepast veld succesvol aangemaakt!"
+
+msgid "Custom field updated successfully!"
+msgstr "Aangepast veld succesvol bijgewerkt!"
+
+msgid "Custom field deleted successfully!"
+msgstr "Aangepast veld succesvol verwijderd!"
+
+msgid "Field name is required."
+msgstr "Veldnaam is verplicht."
+
+msgid "Field label is required."
+msgstr "Veldlabel is verplicht."
+
+msgid "This field name is reserved."
+msgstr "Deze veldnaam is gereserveerd."
+
+msgid "(View only)"
+msgstr "(Alleen bekijken)"
+
+msgid "This field can only be edited by administrators."
+msgstr "Dit veld kan alleen worden bewerkt door beheerders."
+
+# Admin - Import/Export
+msgid "Import Members"
+msgstr "Leden Importeren"
+
+msgid "Import members from a CSV file. An activation email will be sent to each imported member."
+msgstr "Importeer leden vanuit een CSV-bestand. Aan elk geïmporteerd lid wordt een activatie-e-mail gestuurd."
+
+msgid "CSV File Format"
+msgstr "CSV-bestandsformaat"
+
+msgid "Your CSV file should have the following columns in order:"
+msgstr "Uw CSV-bestand moet de volgende kolommen in volgorde bevatten:"
+
+msgid "required"
+msgstr "verplicht"
+
+msgid "Note:"
+msgstr "Opmerking:"
+
+msgid "The first row should contain column headers and will be skipped during import."
+msgstr "De eerste rij moet kolomkoppen bevatten en wordt overgeslagen tijdens het importeren."
+
+msgid "CSV File"
+msgstr "CSV-bestand"
+
+msgid "Select a CSV file to import."
+msgstr "Selecteer een CSV-bestand om te importeren."
+
+msgid "Import Results"
+msgstr "Importresultaten"
+
+msgid "Download Sample CSV"
+msgstr "Voorbeeld CSV Downloaden"
+
+msgid "Download a sample CSV file with the correct format:"
+msgstr "Download een voorbeeld CSV-bestand met het juiste formaat:"
+
+msgid "Export Members"
+msgstr "Leden Exporteren"
+
+msgid "Export members to a CSV file for backup or external use."
+msgstr "Exporteer leden naar een CSV-bestand voor backup of extern gebruik."
+
+msgid "Active Only"
+msgstr "Alleen Actief"
+
+msgid "Inactive Only"
+msgstr "Alleen Inactief"
+
+msgid "Pending Only"
+msgstr "Alleen In Afwachting"
+
+msgid "Export Information"
+msgstr "Export Informatie"
+
+msgid "The exported CSV will include:"
+msgstr "Het geëxporteerde CSV-bestand bevat:"
+
+msgid "Member ID, Username, Email"
+msgstr "Lid ID, Gebruikersnaam, E-mail"
+
+msgid "First Name, Last Name"
+msgstr "Voornaam, Achternaam"
+
+msgid "Status, Admin Status, Registration Date"
+msgstr "Status, Beheerdersstatus, Registratiedatum"
+
+msgid "All custom field values"
+msgstr "Alle aangepaste veldwaarden"
+
+msgid "Import completed. %1$d members imported successfully, %2$d errors."
+msgstr "Import voltooid. %1$d leden succesvol geïmporteerd, %2$d fouten."
+
+msgid "Row %d: Email is required."
+msgstr "Rij %d: E-mail is verplicht."
+
+msgid "Row %1$d: %2$s"
+msgstr "Rij %1$d: %2$s"
+
+msgid "Errors:"
+msgstr "Fouten:"
+
+msgid "...and %d more errors."
+msgstr "...en nog %d fouten."
+
+msgid "Please select a CSV file to upload."
+msgstr "Selecteer een CSV-bestand om te uploaden."
+
+msgid "Invalid file type. Please upload a CSV file."
+msgstr "Ongeldig bestandstype. Upload een CSV-bestand."
+
+msgid "Failed to read the CSV file."
+msgstr "Kan het CSV-bestand niet lezen."
+
+msgid "The CSV file is empty or contains only headers."
+msgstr "Het CSV-bestand is leeg of bevat alleen kopteksten."
+
+# Admin - Settings
+msgid "Member Registration Settings"
+msgstr "Ledenregistratie Instellingen"
+
+msgid "Registration Settings"
+msgstr "Registratie Instellingen"
+
+msgid "Allow Registration"
+msgstr "Registratie Toestaan"
+
+msgid "Allow new members to register"
+msgstr "Nieuwe leden toestaan om te registreren"
+
+msgid "When disabled, the registration form will not be shown."
+msgstr "Wanneer uitgeschakeld, wordt het registratieformulier niet getoond."
+
+msgid "Allow Multiple Members"
+msgstr "Meerdere Leden Toestaan"
+
+msgid "Allow users to register multiple members under one account"
+msgstr "Gebruikers toestaan om meerdere leden te registreren onder één account"
+
+msgid "Useful for parents registering multiple children or family members."
+msgstr "Handig voor ouders die meerdere kinderen of familieleden registreren."
+
+msgid "Member Area Page"
+msgstr "Ledengebied Pagina"
+
+msgid "— Select —"
+msgstr "— Selecteer —"
+
+msgid "The page containing the [mbrreg_member_area] shortcode."
+msgstr "De pagina met de [mbrreg_member_area] shortcode."
+
+msgid "Login Redirect Page"
+msgstr "Doorstuurpagina Na Inloggen"
+
+msgid "Where to redirect members after successful login."
+msgstr "Waarheen leden worden doorgestuurd na succesvol inloggen."
+
+msgid "Required Fields"
+msgstr "Verplichte Velden"
+
+msgid "Select which default fields should be required during registration and profile updates. Additional fields can be configured in the Custom Fields section."
+msgstr "Selecteer welke standaardvelden verplicht moeten zijn tijdens registratie en profielupdates. Extra velden kunnen worden geconfigureerd in de sectie Aangepaste Velden."
+
+msgid "Email Settings"
+msgstr "E-mail Instellingen"
+
+msgid "From Name"
+msgstr "Van Naam"
+
+msgid "The name that will appear in the \"From\" field of emails."
+msgstr "De naam die verschijnt in het \"Van\" veld van e-mails."
+
+msgid "From Email"
+msgstr "Van E-mail"
+
+msgid "The email address that will appear in the \"From\" field."
+msgstr "Het e-mailadres dat verschijnt in het \"Van\" veld."
+
+msgid "Shortcodes"
+msgstr "Shortcodes"
+
+msgid "Complete member area with login, registration, and dashboard."
+msgstr "Volledig ledengebied met inloggen, registratie en dashboard."
+
+msgid "Standalone login form."
+msgstr "Zelfstandig inlogformulier."
+
+msgid "Standalone registration form."
+msgstr "Zelfstandig registratieformulier."
+
+msgid "Member dashboard (for logged-in members only)."
+msgstr "Ledendashboard (alleen voor ingelogde leden)."
+
+# ==========================================
+# EMAIL TRANSLATIONS
+# ==========================================
+
+# Activation Email
+msgid "Activate your membership at %s"
+msgstr "Activeer uw lidmaatschap bij %s"
+
+msgid "Hello %1$s,
+
+Thank you for registering as a member at %2$s.
+
+Please click the following link to activate your account:
+
+%3$s
+
+If you did not register for this account, please ignore this email.
+
+Best regards,
+%4$s"
+msgstr "Hallo %1$s,
+
+Bedankt voor uw registratie als lid bij %2$s.
+
+Klik op de volgende link om uw account te activeren:
+
+%3$s
+
+Als u zich niet heeft geregistreerd voor dit account, kunt u deze e-mail negeren.
+
+Met vriendelijke groet,
+%4$s"
+
+# Import Activation Email
+msgid "You have been registered as a member at %s"
+msgstr "U bent geregistreerd als lid bij %s"
+
+msgid "Hello %1$s,
+
+You have been registered as a member at %2$s.
+
+Please click the following link to activate your account:
+
+%3$s
+
+After activation, you can log in and review/update your details at:
+%4$s
+
+Your username is: %5$s
+
+If you need to set a password, please use the password reset function on the login page.
+
+If you did not expect this email, please contact the club administrator.
+
+Best regards,
+%6$s"
+msgstr "Hallo %1$s,
+
+U bent geregistreerd als lid bij %2$s.
+
+Klik op de volgende link om uw account te activeren:
+
+%3$s
+
+Na activering kunt u inloggen en uw gegevens bekijken/bijwerken op:
+%4$s
+
+Uw gebruikersnaam is: %5$s
+
+Als u een wachtwoord moet instellen, gebruik dan de wachtwoord vergeten functie op de inlogpagina.
+
+Als u deze e-mail niet verwachtte, neem dan contact op met de clubbeheerder.
+
+Met vriendelijke groet,
+%6$s"
+
+# Welcome Email
+msgid "Welcome to %s!"
+msgstr "Welkom bij %s!"
+
+msgid "Hello %1$s,
+
+Your account at %2$s has been activated successfully!
+
+You can now log in and manage your membership details at:
+%3$s
+
+Best regards,
+%4$s"
+msgstr "Hallo %1$s,
+
+Uw account bij %2$s is succesvol geactiveerd!
+
+U kunt nu inloggen en uw lidmaatschapsgegevens beheren op:
+%3$s
+
+Met vriendelijke groet,
+%4$s"
+
+# Admin Notification Email
+msgid "New member registration at %s"
+msgstr "Nieuwe ledenregistratie bij %s"
+
+msgid "A new member has registered:
+
+Username: %1$s
+Email: %2$s
+
+You can view and manage members in the WordPress admin area."
+msgstr "Een nieuw lid heeft zich geregistreerd:
+
+Gebruikersnaam: %1$s
+E-mail: %2$s
+
+U kunt leden bekijken en beheren in het WordPress beheergebied."
+
+# Misc
+msgid "Processing..."
+msgstr "Bezig met verwerken..."
+
+msgid "An error occurred. Please try again."
+msgstr "Er is een fout opgetreden. Probeer het opnieuw."
+
+msgid "Security check failed."
+msgstr "Beveiligingscontrole mislukt."
+
+msgid "You must be logged in."
+msgstr "U moet ingelogd zijn."
+
+msgid "Invalid member ID."
+msgstr "Ongeldig lid ID."
+
+msgid "You do not have permission to perform this action."
+msgstr "U heeft geen toestemming om deze actie uit te voeren."
+
+msgid "You do not have permission to update this member."
+msgstr "U heeft geen toestemming om dit lid bij te werken."
+
+msgid "Please activate your account first. Check your email for the activation link."
+msgstr "Activeer eerst uw account. Controleer uw e-mail voor de activatielink."
+
+msgid "All your memberships are inactive. Please contact the administrator."
+msgstr "Al uw lidmaatschappen zijn inactief. Neem contact op met de beheerder."
+
+msgid "Your account has been activated! You can now log in."
+msgstr "Uw account is geactiveerd! U kunt nu inloggen."
+
+msgid "Invalid activation key."
+msgstr "Ongeldige activatiesleutel."
+
+msgid "This account is already activated."
+msgstr "Dit account is al geactiveerd."
+
+msgid "Activation key is required."
+msgstr "Activatiesleutel is verplicht."
+
+msgid "You are already logged in."
+msgstr "U bent al ingelogd."
+
+msgid "You are already registered and logged in."
+msgstr "U bent al geregistreerd en ingelogd."
+
+msgid "Please log in to view your dashboard."
+msgstr "Log in om uw dashboard te bekijken."
+
+msgid "No member profile found. Please contact an administrator."
+msgstr "Geen lidprofiel gevonden. Neem contact op met een beheerder."
+
+msgid "%s is required."
+msgstr "%s is verplicht."
+
+msgid "Activation email sent successfully!"
+msgstr "Activatie-e-mail succesvol verzonden!"
+
+msgid "-- Select --"
+msgstr "-- Selecteer --"
+
+msgid "Bulk action completed. %1$d successful, %2$d failed."
+msgstr "Bulkactie voltooid. %1$d succesvol, %2$d mislukt."
+
+msgid "Please select at least one member."
+msgstr "Selecteer ten minste één lid."
+
+msgid "Please select an action."
+msgstr "Selecteer een actie."
+
+# Legacy field labels (for migration)
+msgid "Address"
+msgstr "Adres"
+
+msgid "Telephone"
+msgstr "Telefoonnummer"
+
+msgid "Date of Birth"
+msgstr "Geboortedatum"
+
+msgid "Place of Birth"
+msgstr "Geboorteplaats"
+```
+
+---
+
+## Summary of Changes in Version 1.2.0
+
+### Adjustments Made:
+1. **Date Format Setting** - Added a new "Display Settings" section in settings with option to choose between European (DD/MM/YYYY) and US (MM/DD/YYYY) date formats. Helper functions `mbrreg_format_date()`, `mbrreg_parse_date()`, `mbrreg_get_date_format()`, and `mbrreg_get_date_placeholder()` handle date formatting throughout the plugin.
+
+2. **Removed Default Fields** - Removed address, telephone, date of birth, and place of birth from the default member fields. Only first_name and last_name remain as default personal details. A migration function was added to convert any existing data in these fields to custom fields automatically.
+
+3. **Multilingual Emails** - All email content is now translatable using the standard WordPress translation system. The Dutch translation file has been updated with complete translations for all email templates.
+
+### Fixes Made:
+1. **Modal Centering** - Fixed the CSS for modals to properly center on both desktop and mobile screens. The modal now uses fixed positioning with proper viewport centering. On mobile, the modal expands to cover the full screen.
+
+2. **Input Field Sizing** - Fixed input fields to properly fit within their form containers by adding `width: 100%`, `max-width: 100%`, and `box-sizing: border-box` to all input elements.
+
+### Files Changed:
+- `member-registration-plugin.php` - Updated version, added date helper functions
+- `includes/class-mbrreg-activator.php` - Simplified table schema, added migration
+- `includes/class-mbrreg-database.php` - Removed old field references
+- `includes/class-mbrreg-member.php` - Removed old field handling
+- `includes/class-mbrreg-email.php` - Made emails translatable
+- `includes/class-mbrreg-admin.php` - Added date format setting registration
+- `admin/partials/mbrreg-admin-settings.php` - Added date format option, simplified required fields
+- `admin/partials/mbrreg-admin-member-edit.php` - Simplified form
+- `admin/partials/mbrreg-admin-members.php` - Updated date display
+- `admin/partials/mbrreg-admin-import-export.php` - Updated CSV format
+- `public/partials/mbrreg-register-form.php` - Simplified form
+- `public/partials/mbrreg-member-dashboard.php` - Simplified form
+- `public/css/mbrreg-public.css` - Fixed modal and input styling
+- `languages/member-registration-plugin-nl_NL.po` - Added email translations
 
 
