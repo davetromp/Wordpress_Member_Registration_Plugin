@@ -38,15 +38,25 @@ class Mbrreg_Ajax {
 	private $custom_fields;
 
 	/**
+	 * Email instance.
+	 *
+	 * @since 1.1.0
+	 * @var Mbrreg_Email
+	 */
+	private $email;
+
+	/**
 	 * Constructor.
 	 *
 	 * @since 1.0.0
 	 * @param Mbrreg_Member        $member        Member instance.
 	 * @param Mbrreg_Custom_Fields $custom_fields Custom fields instance.
+	 * @param Mbrreg_Email         $email         Email instance.
 	 */
-	public function __construct( Mbrreg_Member $member, Mbrreg_Custom_Fields $custom_fields ) {
+	public function __construct( Mbrreg_Member $member, Mbrreg_Custom_Fields $custom_fields, Mbrreg_Email $email = null ) {
 		$this->member        = $member;
 		$this->custom_fields = $custom_fields;
+		$this->email         = $email;
 	}
 
 	/**
@@ -63,6 +73,7 @@ class Mbrreg_Ajax {
 		// Private AJAX actions (for logged in users).
 		add_action( 'wp_ajax_mbrreg_register', array( $this, 'handle_register' ) );
 		add_action( 'wp_ajax_mbrreg_login', array( $this, 'handle_login' ) );
+		add_action( 'wp_ajax_mbrreg_add_member', array( $this, 'handle_add_member' ) );
 		add_action( 'wp_ajax_mbrreg_update_profile', array( $this, 'handle_update_profile' ) );
 		add_action( 'wp_ajax_mbrreg_set_inactive', array( $this, 'handle_set_inactive' ) );
 		add_action( 'wp_ajax_mbrreg_logout', array( $this, 'handle_logout' ) );
@@ -75,6 +86,8 @@ class Mbrreg_Ajax {
 		add_action( 'wp_ajax_mbrreg_admin_update_field', array( $this, 'handle_admin_update_field' ) );
 		add_action( 'wp_ajax_mbrreg_admin_delete_field', array( $this, 'handle_admin_delete_field' ) );
 		add_action( 'wp_ajax_mbrreg_admin_resend_activation', array( $this, 'handle_resend_activation' ) );
+		add_action( 'wp_ajax_mbrreg_admin_import_csv', array( $this, 'handle_import_csv' ) );
+		add_action( 'wp_ajax_mbrreg_admin_export_csv', array( $this, 'handle_export_csv' ) );
 	}
 
 	/**
@@ -108,7 +121,7 @@ class Mbrreg_Ajax {
 		);
 
 		// Get custom field values.
-		$custom_fields = $this->custom_fields->get_all();
+		$custom_fields = $this->custom_fields->get_user_editable();
 		foreach ( $custom_fields as $field ) {
 			$field_key = 'custom_' . $field->id;
 			if ( isset( $_POST[ $field_key ] ) ) {
@@ -127,6 +140,65 @@ class Mbrreg_Ajax {
 			array(
 				'message'   => __( 'Registration successful! Please check your email to activate your account.', 'member-registration-plugin' ),
 				'member_id' => $result,
+				'reload'    => false,
+			)
+		);
+	}
+
+	/**
+	 * Handle adding additional member (for logged in users).
+	 *
+	 * @since 1.1.0
+	 * @return void
+	 */
+	public function handle_add_member() {
+		// Verify nonce.
+		if ( ! check_ajax_referer( 'mbrreg_add_member_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'member-registration-plugin' ) ) );
+		}
+
+		// Check if user is logged in.
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( array( 'message' => __( 'You must be logged in.', 'member-registration-plugin' ) ) );
+		}
+
+		// Check if multiple members are allowed.
+		if ( ! get_option( 'mbrreg_allow_multiple_members', true ) ) {
+			wp_send_json_error( array( 'message' => __( 'Adding multiple members is not allowed.', 'member-registration-plugin' ) ) );
+		}
+
+		// Get and sanitize data.
+		$data = array(
+			'add_to_existing_user' => true,
+			'first_name'           => isset( $_POST['first_name'] ) ? sanitize_text_field( wp_unslash( $_POST['first_name'] ) ) : '',
+			'last_name'            => isset( $_POST['last_name'] ) ? sanitize_text_field( wp_unslash( $_POST['last_name'] ) ) : '',
+			'address'              => isset( $_POST['address'] ) ? sanitize_textarea_field( wp_unslash( $_POST['address'] ) ) : '',
+			'telephone'            => isset( $_POST['telephone'] ) ? sanitize_text_field( wp_unslash( $_POST['telephone'] ) ) : '',
+			'date_of_birth'        => isset( $_POST['date_of_birth'] ) ? sanitize_text_field( wp_unslash( $_POST['date_of_birth'] ) ) : '',
+			'place_of_birth'       => isset( $_POST['place_of_birth'] ) ? sanitize_text_field( wp_unslash( $_POST['place_of_birth'] ) ) : '',
+		);
+
+		// Get custom field values.
+		$custom_fields = $this->custom_fields->get_user_editable();
+		foreach ( $custom_fields as $field ) {
+			$field_key = 'custom_' . $field->id;
+			if ( isset( $_POST[ $field_key ] ) ) {
+				$data[ $field_key ] = $this->custom_fields->sanitize_field_value( $field, wp_unslash( $_POST[ $field_key ] ) );
+			}
+		}
+
+		// Register member.
+		$result = $this->member->register( $data );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		wp_send_json_success(
+			array(
+				'message'   => __( 'Member added successfully! Please check your email to activate the membership.', 'member-registration-plugin' ),
+				'member_id' => $result,
+				'reload'    => true,
 			)
 		);
 	}
@@ -158,16 +230,29 @@ class Mbrreg_Ajax {
 			wp_send_json_error( array( 'message' => __( 'Invalid username or password.', 'member-registration-plugin' ) ) );
 		}
 
-		// Check if member is active.
-		$member = $this->member->get_by_user_id( $user->ID );
+		// Check if any member is active.
+		$members      = $this->member->get_all_by_user_id( $user->ID );
+		$has_active   = false;
+		$all_pending  = true;
+		$all_inactive = true;
 
-		if ( $member ) {
-			if ( 'pending' === $member->status ) {
-				wp_send_json_error( array( 'message' => __( 'Please activate your account first. Check your email for the activation link.', 'member-registration-plugin' ) ) );
+		foreach ( $members as $member ) {
+			if ( 'active' === $member->status ) {
+				$has_active   = true;
+				$all_pending  = false;
+				$all_inactive = false;
+			} elseif ( 'pending' === $member->status ) {
+				$all_inactive = false;
+			} elseif ( 'inactive' === $member->status ) {
+				$all_pending = false;
 			}
+		}
 
-			if ( 'inactive' === $member->status ) {
-				wp_send_json_error( array( 'message' => __( 'Your account is inactive. Please contact the administrator.', 'member-registration-plugin' ) ) );
+		if ( ! empty( $members ) && ! $has_active ) {
+			if ( $all_pending ) {
+				wp_send_json_error( array( 'message' => __( 'Please activate your account first. Check your email for the activation link.', 'member-registration-plugin' ) ) );
+			} elseif ( $all_inactive ) {
+				wp_send_json_error( array( 'message' => __( 'All your memberships are inactive. Please contact the administrator.', 'member-registration-plugin' ) ) );
 			}
 		}
 
@@ -175,7 +260,7 @@ class Mbrreg_Ajax {
 		wp_set_current_user( $user->ID );
 		wp_set_auth_cookie( $user->ID, $remember );
 
-		$redirect_url = '';
+		$redirect_url  = '';
 		$redirect_page = get_option( 'mbrreg_login_redirect_page', 0 );
 		if ( $redirect_page ) {
 			$redirect_url = get_permalink( $redirect_page );
@@ -185,6 +270,7 @@ class Mbrreg_Ajax {
 			array(
 				'message'      => __( 'Login successful!', 'member-registration-plugin' ),
 				'redirect_url' => $redirect_url,
+				'reload'       => true,
 			)
 		);
 	}
@@ -206,11 +292,15 @@ class Mbrreg_Ajax {
 			wp_send_json_error( array( 'message' => __( 'You must be logged in.', 'member-registration-plugin' ) ) );
 		}
 
-		$current_user = wp_get_current_user();
-		$member       = $this->member->get_by_user_id( $current_user->ID );
+		$member_id = isset( $_POST['member_id'] ) ? absint( $_POST['member_id'] ) : 0;
 
-		if ( ! $member ) {
-			wp_send_json_error( array( 'message' => __( 'Member not found.', 'member-registration-plugin' ) ) );
+		if ( ! $member_id ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid member ID.', 'member-registration-plugin' ) ) );
+		}
+
+		// Check permission.
+		if ( ! $this->member->can_manage_member( $member_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to update this member.', 'member-registration-plugin' ) ) );
 		}
 
 		// Prepare update data.
@@ -223,13 +313,8 @@ class Mbrreg_Ajax {
 			'place_of_birth' => isset( $_POST['place_of_birth'] ) ? sanitize_text_field( wp_unslash( $_POST['place_of_birth'] ) ) : '',
 		);
 
-		// Email update (if provided).
-		if ( isset( $_POST['email'] ) && ! empty( $_POST['email'] ) ) {
-			$data['email'] = sanitize_email( wp_unslash( $_POST['email'] ) );
-		}
-
-		// Get custom field values.
-		$custom_fields = $this->custom_fields->get_all();
+		// Get custom field values (only user-editable fields).
+		$custom_fields = $this->custom_fields->get_user_editable();
 		foreach ( $custom_fields as $field ) {
 			$field_key = 'custom_' . $field->id;
 			if ( isset( $_POST[ $field_key ] ) ) {
@@ -238,13 +323,18 @@ class Mbrreg_Ajax {
 		}
 
 		// Update member.
-		$result = $this->member->update( $member->id, $data );
+		$result = $this->member->update( $member_id, $data, false );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
 		}
 
-		wp_send_json_success( array( 'message' => __( 'Profile updated successfully!', 'member-registration-plugin' ) ) );
+		wp_send_json_success(
+			array(
+				'message' => __( 'Profile updated successfully!', 'member-registration-plugin' ),
+				'reload'  => true,
+			)
+		);
 	}
 
 	/**
@@ -264,24 +354,41 @@ class Mbrreg_Ajax {
 			wp_send_json_error( array( 'message' => __( 'You must be logged in.', 'member-registration-plugin' ) ) );
 		}
 
-		$current_user = wp_get_current_user();
-		$member       = $this->member->get_by_user_id( $current_user->ID );
+		$member_id = isset( $_POST['member_id'] ) ? absint( $_POST['member_id'] ) : 0;
 
-		if ( ! $member ) {
-			wp_send_json_error( array( 'message' => __( 'Member not found.', 'member-registration-plugin' ) ) );
+		if ( ! $member_id ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid member ID.', 'member-registration-plugin' ) ) );
+		}
+
+		// Check permission.
+		if ( ! $this->member->can_manage_member( $member_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to update this member.', 'member-registration-plugin' ) ) );
 		}
 
 		// Set member as inactive.
-		$result = $this->member->set_inactive( $member->id );
+		$result = $this->member->set_inactive( $member_id );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
 		}
 
-		// Log the user out.
-		wp_logout();
+		$logout_user = false;
+		if ( is_array( $result ) && isset( $result['logout_user'] ) ) {
+			$logout_user = $result['logout_user'];
+		}
 
-		wp_send_json_success( array( 'message' => __( 'Your membership has been set to inactive.', 'member-registration-plugin' ) ) );
+		// Log the user out if no more active members.
+		if ( $logout_user ) {
+			wp_logout();
+		}
+
+		wp_send_json_success(
+			array(
+				'message'     => __( 'Membership has been set to inactive.', 'member-registration-plugin' ),
+				'logout_user' => $logout_user,
+				'reload'      => true,
+			)
+		);
 	}
 
 	/**
@@ -298,7 +405,12 @@ class Mbrreg_Ajax {
 
 		wp_logout();
 
-		wp_send_json_success( array( 'message' => __( 'You have been logged out.', 'member-registration-plugin' ) ) );
+		wp_send_json_success(
+			array(
+				'message' => __( 'You have been logged out.', 'member-registration-plugin' ),
+				'reload'  => true,
+			)
+		);
 	}
 
 	/**
@@ -342,7 +454,7 @@ class Mbrreg_Ajax {
 			$data['is_admin'] = (int) $_POST['is_admin'];
 		}
 
-		// Get custom field values.
+		// Get ALL custom field values (including admin-only).
 		$custom_fields = $this->custom_fields->get_all();
 		foreach ( $custom_fields as $field ) {
 			$field_key = 'custom_' . $field->id;
@@ -351,8 +463,8 @@ class Mbrreg_Ajax {
 			}
 		}
 
-		// Update member.
-		$result = $this->member->update( $member_id, $data );
+		// Update member (admin edit = true).
+		$result = $this->member->update( $member_id, $data, true );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
@@ -490,6 +602,7 @@ class Mbrreg_Ajax {
 			'field_type'    => isset( $_POST['field_type'] ) ? sanitize_text_field( wp_unslash( $_POST['field_type'] ) ) : 'text',
 			'field_options' => isset( $_POST['field_options'] ) ? sanitize_textarea_field( wp_unslash( $_POST['field_options'] ) ) : '',
 			'is_required'   => isset( $_POST['is_required'] ) ? (int) $_POST['is_required'] : 0,
+			'is_admin_only' => isset( $_POST['is_admin_only'] ) ? (int) $_POST['is_admin_only'] : 0,
 			'field_order'   => isset( $_POST['field_order'] ) ? (int) $_POST['field_order'] : 0,
 		);
 
@@ -535,6 +648,7 @@ class Mbrreg_Ajax {
 			'field_type'    => isset( $_POST['field_type'] ) ? sanitize_text_field( wp_unslash( $_POST['field_type'] ) ) : 'text',
 			'field_options' => isset( $_POST['field_options'] ) ? sanitize_textarea_field( wp_unslash( $_POST['field_options'] ) ) : '',
 			'is_required'   => isset( $_POST['is_required'] ) ? (int) $_POST['is_required'] : 0,
+			'is_admin_only' => isset( $_POST['is_admin_only'] ) ? (int) $_POST['is_admin_only'] : 0,
 			'field_order'   => isset( $_POST['field_order'] ) ? (int) $_POST['field_order'] : 0,
 		);
 
@@ -609,5 +723,111 @@ class Mbrreg_Ajax {
 		}
 
 		wp_send_json_success( array( 'message' => __( 'Activation email sent successfully!', 'member-registration-plugin' ) ) );
+	}
+
+	/**
+	 * Handle CSV import.
+	 *
+	 * @since 1.1.0
+	 * @return void
+	 */
+	public function handle_import_csv() {
+		// Verify nonce.
+		if ( ! check_ajax_referer( 'mbrreg_admin_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'member-registration-plugin' ) ) );
+		}
+
+		// Check permissions.
+		if ( ! current_user_can( 'mbrreg_import_members' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'member-registration-plugin' ) ) );
+		}
+
+		// Check if file was uploaded.
+		if ( ! isset( $_FILES['csv_file'] ) || ! is_uploaded_file( $_FILES['csv_file']['tmp_name'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'Please select a CSV file to upload.', 'member-registration-plugin' ) ) );
+		}
+
+		$file = $_FILES['csv_file'];
+
+		// Validate file type.
+		$allowed_types = array( 'text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel' );
+		if ( ! in_array( $file['type'], $allowed_types, true ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid file type. Please upload a CSV file.', 'member-registration-plugin' ) ) );
+		}
+
+		// Parse CSV.
+		$csv_data = array();
+		$handle   = fopen( $file['tmp_name'], 'r' );
+
+		if ( false === $handle ) {
+			wp_send_json_error( array( 'message' => __( 'Failed to read the CSV file.', 'member-registration-plugin' ) ) );
+		}
+
+		while ( ( $row = fgetcsv( $handle, 0, ',' ) ) !== false ) {
+			$csv_data[] = $row;
+		}
+
+		fclose( $handle );
+
+		if ( count( $csv_data ) < 2 ) {
+			wp_send_json_error( array( 'message' => __( 'The CSV file is empty or contains only headers.', 'member-registration-plugin' ) ) );
+		}
+
+		// Import members.
+		$results = $this->member->import_csv( $csv_data );
+
+		$message = sprintf(
+			/* translators: 1: Number of successful imports, 2: Number of errors */
+			__( 'Import completed. %1$d members imported successfully, %2$d errors.', 'member-registration-plugin' ),
+			$results['success'],
+			count( $results['errors'] )
+		);
+
+		if ( ! empty( $results['errors'] ) ) {
+			$message .= "\n\n" . __( 'Errors:', 'member-registration-plugin' ) . "\n" . implode( "\n", array_slice( $results['errors'], 0, 10 ) );
+			if ( count( $results['errors'] ) > 10 ) {
+				$message .= sprintf(
+					/* translators: %d: Number of additional errors */
+					__( "\n...and %d more errors.", 'member-registration-plugin' ),
+					count( $results['errors'] ) - 10
+				);
+			}
+		}
+
+		wp_send_json_success( array( 'message' => $message ) );
+	}
+
+	/**
+	 * Handle CSV export.
+	 *
+	 * @since 1.1.0
+	 * @return void
+	 */
+	public function handle_export_csv() {
+		// Verify nonce.
+		if ( ! check_ajax_referer( 'mbrreg_admin_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'member-registration-plugin' ) ) );
+		}
+
+		// Check permissions.
+		if ( ! current_user_can( 'mbrreg_export_members' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'member-registration-plugin' ) ) );
+		}
+
+		$status = isset( $_POST['status'] ) ? sanitize_text_field( wp_unslash( $_POST['status'] ) ) : '';
+
+		$args = array();
+		if ( ! empty( $status ) ) {
+			$args['status'] = $status;
+		}
+
+		$csv = $this->member->export_csv( $args );
+
+		wp_send_json_success(
+			array(
+				'csv'      => base64_encode( $csv ), // phpcs:ignore
+				'filename' => 'members-export-' . gmdate( 'Y-m-d' ) . '.csv',
+			)
+		);
 	}
 }

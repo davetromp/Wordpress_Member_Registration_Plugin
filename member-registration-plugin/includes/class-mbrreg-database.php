@@ -187,7 +187,7 @@ class Mbrreg_Database {
 	}
 
 	/**
-	 * Get a member by user ID.
+	 * Get a member by user ID (returns first member for backwards compatibility).
 	 *
 	 * @since 1.0.0
 	 * @param int $user_id WordPress user ID.
@@ -195,11 +195,48 @@ class Mbrreg_Database {
 	 */
 	public function get_member_by_user_id( $user_id ) {
 		$sql = $this->wpdb->prepare(
-			"SELECT * FROM {$this->get_members_table()} WHERE user_id = %d",
+			"SELECT * FROM {$this->get_members_table()} WHERE user_id = %d ORDER BY id ASC LIMIT 1",
 			$user_id
 		);
 
 		return $this->wpdb->get_row( $sql );
+	}
+
+	/**
+	 * Get all members by user ID.
+	 *
+	 * @since 1.1.0
+	 * @param int $user_id WordPress user ID.
+	 * @return array Array of member objects.
+	 */
+	public function get_members_by_user_id( $user_id ) {
+		$sql = $this->wpdb->prepare(
+			"SELECT * FROM {$this->get_members_table()} WHERE user_id = %d ORDER BY id ASC",
+			$user_id
+		);
+
+		return $this->wpdb->get_results( $sql );
+	}
+
+	/**
+	 * Count members by user ID.
+	 *
+	 * @since 1.1.0
+	 * @param int    $user_id WordPress user ID.
+	 * @param string $status  Optional status filter.
+	 * @return int Number of members.
+	 */
+	public function count_members_by_user_id( $user_id, $status = '' ) {
+		$sql = $this->wpdb->prepare(
+			"SELECT COUNT(*) FROM {$this->get_members_table()} WHERE user_id = %d",
+			$user_id
+		);
+
+		if ( ! empty( $status ) ) {
+			$sql .= $this->wpdb->prepare( ' AND status = %s', $status );
+		}
+
+		return (int) $this->wpdb->get_var( $sql );
 	}
 
 	/**
@@ -230,6 +267,7 @@ class Mbrreg_Database {
 			'status'   => '',
 			'is_admin' => null,
 			'search'   => '',
+			'user_id'  => null,
 			'orderby'  => 'created_at',
 			'order'    => 'DESC',
 			'limit'    => -1,
@@ -249,6 +287,11 @@ class Mbrreg_Database {
 		if ( null !== $args['is_admin'] ) {
 			$where_clauses[] = 'is_admin = %d';
 			$where_values[]  = (int) $args['is_admin'];
+		}
+
+		if ( null !== $args['user_id'] ) {
+			$where_clauses[] = 'user_id = %d';
+			$where_values[]  = (int) $args['user_id'];
 		}
 
 		if ( ! empty( $args['search'] ) ) {
@@ -274,7 +317,7 @@ class Mbrreg_Database {
 		}
 
 		if ( ! empty( $where_values ) ) {
-			$sql = $this->wpdb->prepare( $sql, $where_values );
+			$sql = $this->wpdb->prepare( $sql, $where_values ); // phpcs:ignore
 		}
 
 		return $this->wpdb->get_results( $sql );
@@ -292,6 +335,7 @@ class Mbrreg_Database {
 			'status'   => '',
 			'is_admin' => null,
 			'search'   => '',
+			'user_id'  => null,
 		);
 
 		$args = wp_parse_args( $args, $defaults );
@@ -309,6 +353,11 @@ class Mbrreg_Database {
 			$where_values[]  = (int) $args['is_admin'];
 		}
 
+		if ( null !== $args['user_id'] ) {
+			$where_clauses[] = 'user_id = %d';
+			$where_values[]  = (int) $args['user_id'];
+		}
+
 		if ( ! empty( $args['search'] ) ) {
 			$search_term     = '%' . $this->wpdb->esc_like( $args['search'] ) . '%';
 			$where_clauses[] = '(first_name LIKE %s OR last_name LIKE %s OR address LIKE %s OR telephone LIKE %s)';
@@ -323,7 +372,7 @@ class Mbrreg_Database {
 		$sql = "SELECT COUNT(*) FROM {$this->get_members_table()} WHERE {$where_sql}";
 
 		if ( ! empty( $where_values ) ) {
-			$sql = $this->wpdb->prepare( $sql, $where_values );
+			$sql = $this->wpdb->prepare( $sql, $where_values ); // phpcs:ignore
 		}
 
 		return (int) $this->wpdb->get_var( $sql );
@@ -369,7 +418,7 @@ class Mbrreg_Database {
 		// Check if meta exists.
 		$existing = $this->get_member_meta( $member_id, $field_id );
 
-		if ( $existing ) {
+		if ( null !== $existing ) {
 			$result = $this->wpdb->update(
 				$this->get_member_meta_table(),
 				array( 'meta_value' => $value ),
@@ -430,7 +479,7 @@ class Mbrreg_Database {
 	 * @return bool True on success, false on failure.
 	 */
 	public function delete_member_meta( $member_id, $field_id = null ) {
-		$where = array( 'member_id' => $member_id );
+		$where        = array( 'member_id' => $member_id );
 		$where_format = array( '%d' );
 
 		if ( null !== $field_id ) {
@@ -461,6 +510,7 @@ class Mbrreg_Database {
 			'field_type'    => 'text',
 			'field_options' => '',
 			'is_required'   => 0,
+			'is_admin_only' => 0,
 			'field_order'   => 0,
 		);
 
@@ -469,7 +519,7 @@ class Mbrreg_Database {
 		$result = $this->wpdb->insert(
 			$this->get_custom_fields_table(),
 			$data,
-			array( '%s', '%s', '%s', '%s', '%d', '%d' )
+			array( '%s', '%s', '%s', '%s', '%d', '%d', '%d' )
 		);
 
 		if ( false === $result ) {
@@ -544,11 +594,40 @@ class Mbrreg_Database {
 	 * Get all custom fields.
 	 *
 	 * @since 1.0.0
+	 * @param bool $include_admin_only Whether to include admin-only fields.
 	 * @return array Array of field objects.
 	 */
-	public function get_custom_fields() {
-		$sql = "SELECT * FROM {$this->get_custom_fields_table()} ORDER BY field_order ASC, id ASC";
+	public function get_custom_fields( $include_admin_only = true ) {
+		$sql = "SELECT * FROM {$this->get_custom_fields_table()}";
+
+		if ( ! $include_admin_only ) {
+			$sql .= ' WHERE is_admin_only = 0';
+		}
+
+		$sql .= ' ORDER BY field_order ASC, id ASC';
 
 		return $this->wpdb->get_results( $sql );
+	}
+
+	/**
+	 * Check if email exists for any user.
+	 *
+	 * @since 1.1.0
+	 * @param string $email Email address.
+	 * @return int|false User ID if exists, false otherwise.
+	 */
+	public function email_exists( $email ) {
+		return email_exists( $email );
+	}
+
+	/**
+	 * Get user by email.
+	 *
+	 * @since 1.1.0
+	 * @param string $email Email address.
+	 * @return WP_User|false User object if exists, false otherwise.
+	 */
+	public function get_user_by_email( $email ) {
+		return get_user_by( 'email', $email );
 	}
 }

@@ -94,6 +94,7 @@ class Mbrreg_Custom_Fields {
 			'field_type'    => $field_type,
 			'field_options' => isset( $data['field_options'] ) ? $this->sanitize_field_options( $data['field_options'] ) : '',
 			'is_required'   => isset( $data['is_required'] ) ? (int) $data['is_required'] : 0,
+			'is_admin_only' => isset( $data['is_admin_only'] ) ? (int) $data['is_admin_only'] : 0,
 			'field_order'   => isset( $data['field_order'] ) ? (int) $data['field_order'] : 0,
 		);
 
@@ -139,6 +140,10 @@ class Mbrreg_Custom_Fields {
 
 		if ( isset( $data['is_required'] ) ) {
 			$update_data['is_required'] = (int) $data['is_required'];
+		}
+
+		if ( isset( $data['is_admin_only'] ) ) {
+			$update_data['is_admin_only'] = (int) $data['is_admin_only'];
 		}
 
 		if ( isset( $data['field_order'] ) ) {
@@ -196,10 +201,21 @@ class Mbrreg_Custom_Fields {
 	 * Get all custom fields.
 	 *
 	 * @since 1.0.0
+	 * @param bool $include_admin_only Whether to include admin-only fields.
 	 * @return array Array of field objects.
 	 */
-	public function get_all() {
-		return $this->database->get_custom_fields();
+	public function get_all( $include_admin_only = true ) {
+		return $this->database->get_custom_fields( $include_admin_only );
+	}
+
+	/**
+	 * Get user-editable custom fields.
+	 *
+	 * @since 1.1.0
+	 * @return array Array of field objects.
+	 */
+	public function get_user_editable() {
+		return $this->database->get_custom_fields( false );
 	}
 
 	/**
@@ -281,9 +297,9 @@ class Mbrreg_Custom_Fields {
 	 * Render a custom field input.
 	 *
 	 * @since 1.0.0
-	 * @param object $field   Field object.
-	 * @param string $value   Current value.
-	 * @param array  $args    Additional arguments.
+	 * @param object $field    Field object.
+	 * @param string $value    Current value.
+	 * @param array  $args     Additional arguments.
 	 * @return string HTML output.
 	 */
 	public function render_field_input( $field, $value = '', $args = array() ) {
@@ -291,6 +307,7 @@ class Mbrreg_Custom_Fields {
 			'name_prefix' => 'custom_',
 			'id_prefix'   => 'mbrreg-custom-',
 			'class'       => 'mbrreg-field-input',
+			'readonly'    => false,
 		);
 
 		$args = wp_parse_args( $args, $defaults );
@@ -299,31 +316,35 @@ class Mbrreg_Custom_Fields {
 		$id       = $args['id_prefix'] . $field->id;
 		$class    = $args['class'];
 		$required = $field->is_required ? 'required' : '';
+		$readonly = $args['readonly'] ? 'readonly disabled' : '';
 
 		$output = '';
 
 		switch ( $field->field_type ) {
 			case 'textarea':
 				$output = sprintf(
-					'<textarea name="%s" id="%s" class="%s" %s>%s</textarea>',
+					'<textarea name="%s" id="%s" class="%s" %s %s>%s</textarea>',
 					esc_attr( $name ),
 					esc_attr( $id ),
 					esc_attr( $class ),
 					$required,
+					$readonly,
 					esc_textarea( $value )
 				);
 				break;
 
 			case 'select':
-				$options = $this->get_field_options( $field );
-				$output  = sprintf(
-					'<select name="%s" id="%s" class="%s" %s>',
+				$options    = $this->get_field_options( $field );
+				$disabled   = $args['readonly'] ? 'disabled' : '';
+				$output     = sprintf(
+					'<select name="%s" id="%s" class="%s" %s %s>',
 					esc_attr( $name ),
 					esc_attr( $id ),
 					esc_attr( $class ),
-					$required
+					$required,
+					$disabled
 				);
-				$output .= '<option value="">' . esc_html__( '-- Select --', 'member-registration-plugin' ) . '</option>';
+				$output    .= '<option value="">' . esc_html__( '-- Select --', 'member-registration-plugin' ) . '</option>';
 				foreach ( $options as $option ) {
 					$output .= sprintf(
 						'<option value="%s" %s>%s</option>',
@@ -336,71 +357,79 @@ class Mbrreg_Custom_Fields {
 				break;
 
 			case 'radio':
-				$options = $this->get_field_options( $field );
+				$options  = $this->get_field_options( $field );
+				$disabled = $args['readonly'] ? 'disabled' : '';
 				foreach ( $options as $index => $option ) {
 					$output .= sprintf(
-						'<label class="mbrreg-radio-label"><input type="radio" name="%s" value="%s" %s %s> %s</label>',
+						'<label class="mbrreg-radio-label"><input type="radio" name="%s" value="%s" %s %s %s> %s</label>',
 						esc_attr( $name ),
 						esc_attr( $option ),
 						checked( $value, $option, false ),
 						0 === $index && $field->is_required ? 'required' : '',
+						$disabled,
 						esc_html( $option )
 					);
 				}
 				break;
 
 			case 'checkbox':
-				$output = sprintf(
-					'<input type="checkbox" name="%s" id="%s" class="%s" value="1" %s %s>',
+				$disabled = $args['readonly'] ? 'disabled' : '';
+				$output   = sprintf(
+					'<input type="checkbox" name="%s" id="%s" class="%s" value="1" %s %s %s>',
 					esc_attr( $name ),
 					esc_attr( $id ),
 					esc_attr( $class ),
 					checked( $value, '1', false ),
-					$required
+					$required,
+					$disabled
 				);
 				break;
 
 			case 'email':
 				$output = sprintf(
-					'<input type="email" name="%s" id="%s" class="%s" value="%s" %s>',
+					'<input type="email" name="%s" id="%s" class="%s" value="%s" %s %s>',
 					esc_attr( $name ),
 					esc_attr( $id ),
 					esc_attr( $class ),
 					esc_attr( $value ),
-					$required
+					$required,
+					$readonly
 				);
 				break;
 
 			case 'number':
 				$output = sprintf(
-					'<input type="number" name="%s" id="%s" class="%s" value="%s" %s>',
+					'<input type="number" name="%s" id="%s" class="%s" value="%s" %s %s>',
 					esc_attr( $name ),
 					esc_attr( $id ),
 					esc_attr( $class ),
 					esc_attr( $value ),
-					$required
+					$required,
+					$readonly
 				);
 				break;
 
 			case 'date':
 				$output = sprintf(
-					'<input type="date" name="%s" id="%s" class="%s" value="%s" %s>',
+					'<input type="date" name="%s" id="%s" class="%s" value="%s" %s %s>',
 					esc_attr( $name ),
 					esc_attr( $id ),
 					esc_attr( $class ),
 					esc_attr( $value ),
-					$required
+					$required,
+					$readonly
 				);
 				break;
 
 			default:
 				$output = sprintf(
-					'<input type="text" name="%s" id="%s" class="%s" value="%s" %s>',
+					'<input type="text" name="%s" id="%s" class="%s" value="%s" %s %s>',
 					esc_attr( $name ),
 					esc_attr( $id ),
 					esc_attr( $class ),
 					esc_attr( $value ),
-					$required
+					$required,
+					$readonly
 				);
 				break;
 		}

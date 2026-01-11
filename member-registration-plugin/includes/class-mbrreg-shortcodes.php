@@ -80,6 +80,9 @@ class Mbrreg_Shortcodes {
 
 		ob_start();
 
+		// Include modal template.
+		include MBRREG_PLUGIN_PATH . 'public/partials/mbrreg-modal.php';
+
 		if ( is_user_logged_in() ) {
 			$this->output_member_dashboard();
 		} else {
@@ -110,6 +113,7 @@ class Mbrreg_Shortcodes {
 		}
 
 		ob_start();
+		include MBRREG_PLUGIN_PATH . 'public/partials/mbrreg-modal.php';
 		include MBRREG_PLUGIN_PATH . 'public/partials/mbrreg-login-form.php';
 		return ob_get_clean();
 	}
@@ -133,7 +137,8 @@ class Mbrreg_Shortcodes {
 		}
 
 		ob_start();
-		$custom_fields = $this->custom_fields->get_all();
+		$custom_fields = $this->custom_fields->get_user_editable();
+		include MBRREG_PLUGIN_PATH . 'public/partials/mbrreg-modal.php';
 		include MBRREG_PLUGIN_PATH . 'public/partials/mbrreg-register-form.php';
 		return ob_get_clean();
 	}
@@ -153,6 +158,7 @@ class Mbrreg_Shortcodes {
 		}
 
 		ob_start();
+		include MBRREG_PLUGIN_PATH . 'public/partials/mbrreg-modal.php';
 		$this->output_member_dashboard();
 		return ob_get_clean();
 	}
@@ -165,7 +171,7 @@ class Mbrreg_Shortcodes {
 	 * @return void
 	 */
 	private function output_login_register_forms( $show_register = true ) {
-		$custom_fields = $this->custom_fields->get_all();
+		$custom_fields = $this->custom_fields->get_user_editable();
 		?>
 		<div class="mbrreg-auth-container">
 			<div class="mbrreg-tabs">
@@ -199,10 +205,12 @@ class Mbrreg_Shortcodes {
 	 * @return void
 	 */
 	private function output_member_dashboard() {
-		$current_user  = wp_get_current_user();
-		$member        = $this->member->get_by_user_id( $current_user->ID );
-		$custom_fields = $this->custom_fields->get_all();
-		$is_admin      = $this->member->is_member_admin();
+		$current_user        = wp_get_current_user();
+		$members             = $this->member->get_all_by_user_id( $current_user->ID );
+		$custom_fields       = $this->custom_fields->get_all();
+		$user_editable_fields = $this->custom_fields->get_user_editable();
+		$is_admin            = $this->member->is_member_admin();
+		$allow_multiple      = get_option( 'mbrreg_allow_multiple_members', true );
 
 		include MBRREG_PLUGIN_PATH . 'public/partials/mbrreg-member-dashboard.php';
 	}

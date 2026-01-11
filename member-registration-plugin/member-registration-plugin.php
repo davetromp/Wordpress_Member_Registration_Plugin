@@ -2,8 +2,8 @@
 /**
  * Plugin Name: Member Registration Plugin
  * Plugin URI: https://example.com/member-registration-plugin
- * Description: A comprehensive member registration and management system for sports clubs.
- * Version: 1.0.0
+ * Description: A comprehensive member registration and management system for sports clubs. Allows users to register and manage multiple members (e.g., family members) under one account.
+ * Version: 1.1.0
  * Author: Sports Club Developer
  * Author URI: https://example.com
  * License: GPL-2.0+
@@ -22,7 +22,7 @@ if ( ! defined( 'WPINC' ) ) {
 /**
  * Current plugin version.
  */
-define( 'MBRREG_VERSION', '1.0.0' );
+define( 'MBRREG_VERSION', '1.1.0' );
 
 /**
  * Plugin base path.
@@ -94,9 +94,9 @@ function mbrreg_init() {
 	$custom_fields = new Mbrreg_Custom_Fields();
 	$email         = new Mbrreg_Email();
 	$member        = new Mbrreg_Member( $database, $custom_fields, $email );
-	$ajax          = new Mbrreg_Ajax( $member, $custom_fields );
+	$ajax          = new Mbrreg_Ajax( $member, $custom_fields, $email );
 	$shortcodes    = new Mbrreg_Shortcodes( $member, $custom_fields );
-	$admin         = new Mbrreg_Admin( $member, $custom_fields );
+	$admin         = new Mbrreg_Admin( $member, $custom_fields, $email );
 	$public        = new Mbrreg_Public( $member );
 
 	// Initialize hooks.
@@ -106,6 +106,80 @@ function mbrreg_init() {
 	$public->init();
 }
 add_action( 'plugins_loaded', 'mbrreg_init' );
+
+/**
+ * Add menu item to WordPress admin bar and dashboard for members.
+ *
+ * @since 1.1.0
+ * @return void
+ */
+function mbrreg_add_member_menu() {
+	// Only for logged-in non-admin users.
+	if ( ! is_user_logged_in() || current_user_can( 'manage_options' ) ) {
+		return;
+	}
+
+	$page_id = get_option( 'mbrreg_registration_page_id', 0 );
+	if ( ! $page_id ) {
+		$page_id = get_option( 'mbrreg_login_redirect_page', 0 );
+	}
+
+	if ( ! $page_id ) {
+		return;
+	}
+
+	$page_url = get_permalink( $page_id );
+
+	// Add to admin menu.
+	add_menu_page(
+		__( 'My Memberships', 'member-registration-plugin' ),
+		__( 'My Memberships', 'member-registration-plugin' ),
+		'read',
+		'mbrreg-my-memberships',
+		function() use ( $page_url ) {
+			wp_safe_redirect( $page_url );
+			exit;
+		},
+		'dashicons-groups',
+		70
+	);
+}
+add_action( 'admin_menu', 'mbrreg_add_member_menu' );
+
+/**
+ * Redirect members from dashboard to member area.
+ *
+ * @since 1.1.0
+ * @return void
+ */
+function mbrreg_redirect_members_from_dashboard() {
+	global $pagenow;
+
+	// Only on dashboard and for non-admin users.
+	if ( 'index.php' !== $pagenow || ! is_admin() || current_user_can( 'manage_options' ) ) {
+		return;
+	}
+
+	// Check if user is a member.
+	$database = new Mbrreg_Database();
+	$members  = $database->get_members_by_user_id( get_current_user_id() );
+
+	if ( empty( $members ) ) {
+		return;
+	}
+
+	// Get redirect page.
+	$page_id = get_option( 'mbrreg_login_redirect_page', 0 );
+	if ( ! $page_id ) {
+		$page_id = get_option( 'mbrreg_registration_page_id', 0 );
+	}
+
+	if ( $page_id && isset( $_GET['mbrreg_stay'] ) === false ) {
+		wp_safe_redirect( get_permalink( $page_id ) );
+		exit;
+	}
+}
+add_action( 'admin_init', 'mbrreg_redirect_members_from_dashboard' );
 
 /**
  * Get global database instance.

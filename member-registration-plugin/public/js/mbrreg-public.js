@@ -30,11 +30,20 @@
 			// Form submissions.
 			$(document).on('submit', '#mbrreg-login-form', this.handleLogin);
 			$(document).on('submit', '#mbrreg-register-form', this.handleRegister);
-			$(document).on('submit', '#mbrreg-profile-form', this.handleProfileUpdate);
+			$(document).on('submit', '.mbrreg-profile-form', this.handleProfileUpdate);
+			$(document).on('submit', '#mbrreg-add-member-form', this.handleAddMember);
 
-			// Actions.
-			$(document).on('click', '#mbrreg-set-inactive-btn', this.handleSetInactive);
-			$(document).on('click', '#mbrreg-logout-btn', this.handleLogout);
+			// Actions with confirmation modal.
+			$(document).on('click', '.mbrreg-deactivate-btn', this.handleDeactivateClick);
+			$(document).on('click', '.mbrreg-logout-btn', this.handleLogoutClick);
+
+			// Add member toggle.
+			$(document).on('click', '.mbrreg-toggle-add-member', this.toggleAddMemberForm);
+			$(document).on('click', '.mbrreg-cancel-add-member', this.hideAddMemberForm);
+
+			// Modal controls.
+			$(document).on('click', '[data-dismiss="modal"]', this.closeModal);
+			$(document).on('click', '.mbrreg-modal-overlay', this.closeModalOnOverlay);
 		},
 
 		/**
@@ -87,18 +96,20 @@
 						MbrregPublic.showMessage($form, response.data.message, 'success');
 
 						// Redirect or reload.
-						if (response.data.redirect_url) {
-							window.location.href = response.data.redirect_url;
-						} else {
-							window.location.reload();
-						}
+						setTimeout(function() {
+							if (response.data.redirect_url) {
+								window.location.href = response.data.redirect_url;
+							} else {
+								window.location.reload();
+							}
+						}, 500);
 					} else {
 						MbrregPublic.showMessage($form, response.data.message, 'error');
 						$submitBtn.prop('disabled', false).text(originalText);
 					}
 				},
 				error: function() {
-					MbrregPublic.showMessage($form, 'An error occurred. Please try again.', 'error');
+					MbrregPublic.showMessage($form, mbrregPublic.errorGeneral, 'error');
 					$submitBtn.prop('disabled', false).text(originalText);
 				}
 			});
@@ -139,17 +150,24 @@
 				processData: false,
 				contentType: false,
 				success: function(response) {
+					$submitBtn.prop('disabled', false).text(originalText);
+					
 					if (response.success) {
 						MbrregPublic.showMessage($form, response.data.message, 'success');
 						$form[0].reset();
+						
+						// Show success in modal if needed.
+						if (response.data.reload) {
+							setTimeout(function() {
+								window.location.reload();
+							}, 2000);
+						}
 					} else {
 						MbrregPublic.showMessage($form, response.data.message, 'error');
 					}
 				},
 				error: function() {
-					MbrregPublic.showMessage($form, 'An error occurred. Please try again.', 'error');
-				},
-				complete: function() {
+					MbrregPublic.showMessage($form, mbrregPublic.errorGeneral, 'error');
 					$submitBtn.prop('disabled', false).text(originalText);
 				}
 			});
@@ -166,6 +184,7 @@
 			const $form = $(this);
 			const $submitBtn = $form.find('button[type="submit"]');
 			const originalText = $submitBtn.text();
+			const memberId = $form.data('member-id');
 
 			MbrregPublic.clearMessages($form);
 			$submitBtn.prop('disabled', true).text(mbrregPublic.processing);
@@ -173,6 +192,7 @@
 			const formData = new FormData($form[0]);
 			formData.append('action', 'mbrreg_update_profile');
 			formData.append('nonce', mbrregPublic.updateProfileNonce);
+			formData.append('member_id', memberId);
 
 			$.ajax({
 				url: mbrregPublic.ajaxUrl,
@@ -181,36 +201,103 @@
 				processData: false,
 				contentType: false,
 				success: function(response) {
+					$submitBtn.prop('disabled', false).text(originalText);
+					
 					if (response.success) {
 						MbrregPublic.showMessage($form, response.data.message, 'success');
+						
+						if (response.data.reload) {
+							setTimeout(function() {
+								window.location.reload();
+							}, 1000);
+						}
 					} else {
 						MbrregPublic.showMessage($form, response.data.message, 'error');
 					}
 				},
 				error: function() {
-					MbrregPublic.showMessage($form, 'An error occurred. Please try again.', 'error');
-				},
-				complete: function() {
+					MbrregPublic.showMessage($form, mbrregPublic.errorGeneral, 'error');
 					$submitBtn.prop('disabled', false).text(originalText);
 				}
 			});
 		},
 
 		/**
-		 * Handle set inactive button click.
+		 * Handle add member form submission.
+		 *
+		 * @param {Event} e Submit event.
+		 */
+		handleAddMember: function(e) {
+			e.preventDefault();
+
+			const $form = $(this);
+			const $submitBtn = $form.find('button[type="submit"]');
+			const originalText = $submitBtn.text();
+
+			MbrregPublic.clearMessages($form);
+			$submitBtn.prop('disabled', true).text(mbrregPublic.processing);
+
+			const formData = new FormData($form[0]);
+			formData.append('action', 'mbrreg_add_member');
+			formData.append('nonce', mbrregPublic.addMemberNonce);
+
+			$.ajax({
+				url: mbrregPublic.ajaxUrl,
+				type: 'POST',
+				data: formData,
+				processData: false,
+				contentType: false,
+				success: function(response) {
+					$submitBtn.prop('disabled', false).text(originalText);
+					
+					if (response.success) {
+						MbrregPublic.showMessage($form, response.data.message, 'success');
+						$form[0].reset();
+						
+						if (response.data.reload) {
+							setTimeout(function() {
+								window.location.reload();
+							}, 1500);
+						}
+					} else {
+						MbrregPublic.showMessage($form, response.data.message, 'error');
+					}
+				},
+				error: function() {
+					MbrregPublic.showMessage($form, mbrregPublic.errorGeneral, 'error');
+					$submitBtn.prop('disabled', false).text(originalText);
+				}
+			});
+		},
+
+		/**
+		 * Handle deactivate button click.
 		 *
 		 * @param {Event} e Click event.
 		 */
-		handleSetInactive: function(e) {
+		handleDeactivateClick: function(e) {
 			e.preventDefault();
 
-			if (!confirm(mbrregPublic.confirmInactive)) {
-				return;
-			}
-
 			const $btn = $(this);
-			const originalText = $btn.text();
+			const memberId = $btn.data('member-id');
 
+			MbrregPublic.showConfirmModal(
+				mbrregPublic.confirmDeactivateTitle,
+				mbrregPublic.confirmDeactivate,
+				function() {
+					MbrregPublic.performDeactivate(memberId, $btn);
+				}
+			);
+		},
+
+		/**
+		 * Perform member deactivation.
+		 *
+		 * @param {int} memberId Member ID.
+		 * @param {jQuery} $btn Button element.
+		 */
+		performDeactivate: function(memberId, $btn) {
+			const originalText = $btn.text();
 			$btn.prop('disabled', true).text(mbrregPublic.processing);
 
 			$.ajax({
@@ -218,19 +305,25 @@
 				type: 'POST',
 				data: {
 					action: 'mbrreg_set_inactive',
-					nonce: mbrregPublic.setInactiveNonce
+					nonce: mbrregPublic.setInactiveNonce,
+					member_id: memberId
 				},
 				success: function(response) {
 					if (response.success) {
-						alert(response.data.message);
-						window.location.reload();
+						MbrregPublic.showAlertModal(
+							mbrregPublic.successTitle,
+							response.data.message,
+							function() {
+								window.location.reload();
+							}
+						);
 					} else {
-						alert(response.data.message);
+						MbrregPublic.showAlertModal(mbrregPublic.errorTitle, response.data.message);
 						$btn.prop('disabled', false).text(originalText);
 					}
 				},
 				error: function() {
-					alert('An error occurred. Please try again.');
+					MbrregPublic.showAlertModal(mbrregPublic.errorTitle, mbrregPublic.errorGeneral);
 					$btn.prop('disabled', false).text(originalText);
 				}
 			});
@@ -241,13 +334,22 @@
 		 *
 		 * @param {Event} e Click event.
 		 */
-		handleLogout: function(e) {
+		handleLogoutClick: function(e) {
 			e.preventDefault();
 
-			if (!confirm(mbrregPublic.confirmLogout)) {
-				return;
-			}
+			MbrregPublic.showConfirmModal(
+				mbrregPublic.confirmLogoutTitle,
+				mbrregPublic.confirmLogout,
+				function() {
+					MbrregPublic.performLogout();
+				}
+			);
+		},
 
+		/**
+		 * Perform logout.
+		 */
+		performLogout: function() {
 			$.ajax({
 				url: mbrregPublic.ajaxUrl,
 				type: 'POST',
@@ -265,6 +367,91 @@
 		},
 
 		/**
+		 * Toggle add member form.
+		 */
+		toggleAddMemberForm: function() {
+			$('.mbrreg-add-member-form-container').slideToggle();
+			$(this).hide();
+		},
+
+		/**
+		 * Hide add member form.
+		 */
+		hideAddMemberForm: function() {
+			$('.mbrreg-add-member-form-container').slideUp();
+			$('.mbrreg-toggle-add-member').show();
+		},
+
+		/**
+		 * Show confirmation modal.
+		 *
+		 * @param {string} title Modal title.
+		 * @param {string} message Modal message.
+		 * @param {function} callback Callback on confirm.
+		 */
+		showConfirmModal: function(title, message, callback) {
+			const $modal = $('#mbrreg-confirm-modal');
+			
+			$modal.find('.mbrreg-modal-title').text(title);
+			$modal.find('.mbrreg-modal-message').text(message);
+			
+			// Remove previous click handler and add new one.
+			$modal.find('.mbrreg-modal-confirm-btn').off('click').on('click', function() {
+				MbrregPublic.closeModal();
+				if (typeof callback === 'function') {
+					callback();
+				}
+			});
+			
+			$modal.fadeIn(200);
+		},
+
+		/**
+		 * Show alert modal.
+		 *
+		 * @param {string} title Modal title.
+		 * @param {string} message Modal message.
+		 * @param {function} callback Callback on close.
+		 */
+		showAlertModal: function(title, message, callback) {
+			const $modal = $('#mbrreg-alert-modal');
+			
+			$modal.find('.mbrreg-modal-title').text(title);
+			$modal.find('.mbrreg-modal-message').text(message);
+			
+			// Store callback for when modal closes.
+			$modal.data('close-callback', callback);
+			
+			$modal.fadeIn(200);
+		},
+
+		/**
+		 * Close modal.
+		 */
+		closeModal: function() {
+			const $modal = $(this).closest('.mbrreg-modal-overlay');
+			const callback = $modal.data('close-callback');
+			
+			$modal.fadeOut(200, function() {
+				$modal.removeData('close-callback');
+				if (typeof callback === 'function') {
+					callback();
+				}
+			});
+		},
+
+		/**
+		 * Close modal when clicking overlay.
+		 *
+		 * @param {Event} e Click event.
+		 */
+		closeModalOnOverlay: function(e) {
+			if ($(e.target).hasClass('mbrreg-modal-overlay')) {
+				$(this).fadeOut(200);
+			}
+		},
+
+		/**
 		 * Show message in form.
 		 *
 		 * @param {jQuery} $form   Form element.
@@ -272,7 +459,13 @@
 		 * @param {string} type    Message type (success/error).
 		 */
 		showMessage: function($form, message, type) {
-			const $messages = $form.find('.mbrreg-form-messages');
+			let $messages = $form.find('.mbrreg-form-messages');
+			
+			// If not found in form, look for global messages container.
+			if (!$messages.length) {
+				$messages = $('.mbrreg-form-messages').first();
+			}
+			
 			const className = type === 'success' ? 'mbrreg-success' : 'mbrreg-error';
 
 			$messages.html('<div class="mbrreg-message ' + className + '">' + message + '</div>');
@@ -290,6 +483,7 @@
 		 */
 		clearMessages: function($form) {
 			$form.find('.mbrreg-form-messages').empty();
+			$('.mbrreg-form-messages').empty();
 		}
 	};
 

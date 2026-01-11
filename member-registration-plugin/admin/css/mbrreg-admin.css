@@ -5,17 +5,88 @@
  * @since 1.0.0
  */
 
-/* General Admin Styles */
+/* Admin Wrap */
 .mbrreg-admin-wrap {
 	max-width: 1200px;
 }
 
-.mbrreg-admin-wrap .mbrreg-admin-messages {
-	margin: 15px 0;
+/* Admin Columns */
+.mbrreg-admin-columns {
+	display: flex;
+	gap: 20px;
+	flex-wrap: wrap;
 }
 
-.mbrreg-admin-wrap .mbrreg-admin-messages .notice {
-	margin: 5px 0;
+.mbrreg-admin-column {
+	flex: 1;
+	min-width: 300px;
+}
+
+.mbrreg-admin-column-wide {
+	flex: 2;
+	min-width: 400px;
+}
+
+/* Admin Card */
+.mbrreg-admin-card {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	padding: 20px;
+	margin-bottom: 20px;
+}
+
+.mbrreg-admin-card h2 {
+	margin-top: 0;
+	padding-bottom: 10px;
+	border-bottom: 1px solid #eee;
+}
+
+/* Admin Sections */
+.mbrreg-admin-sections {
+	display: flex;
+	gap: 30px;
+	flex-wrap: wrap;
+}
+
+.mbrreg-admin-section {
+	flex: 1;
+	min-width: 400px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	padding: 20px;
+}
+
+.mbrreg-admin-section h2 {
+	margin-top: 0;
+	padding-bottom: 10px;
+	border-bottom: 1px solid #eee;
+}
+
+/* Admin Form */
+.mbrreg-admin-form .mbrreg-form-row {
+	margin-bottom: 15px;
+}
+
+.mbrreg-admin-form label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 5px;
+}
+
+.mbrreg-admin-form input[type="text"],
+.mbrreg-admin-form input[type="email"],
+.mbrreg-admin-form input[type="number"],
+.mbrreg-admin-form input[type="date"],
+.mbrreg-admin-form select,
+.mbrreg-admin-form textarea {
+	width: 100%;
+	max-width: 400px;
+}
+
+.mbrreg-admin-form .description {
+	margin-top: 5px;
 }
 
 /* Status Badges */
@@ -25,7 +96,6 @@
 	border-radius: 3px;
 	font-size: 12px;
 	font-weight: 600;
-	text-transform: uppercase;
 }
 
 .mbrreg-status-active {
@@ -43,143 +113,149 @@
 	color: #856404;
 }
 
-/* Members Table */
-.mbrreg-members-table .column-cb {
-	width: 30px;
+/* Fields Table */
+.mbrreg-fields-table th,
+.mbrreg-fields-table td {
+	vertical-align: middle;
 }
 
-.mbrreg-members-table .column-username {
-	width: 15%;
-}
-
-.mbrreg-members-table .column-name {
-	width: 15%;
-}
-
-.mbrreg-members-table .column-email {
-	width: 20%;
-}
-
-.mbrreg-members-table .column-status {
-	width: 10%;
-}
-
-.mbrreg-members-table .column-admin {
-	width: 8%;
+/* Empty Message */
+.mbrreg-empty-message {
+	color: #666;
+	font-style: italic;
+	padding: 20px;
 	text-align: center;
-}
-
-.mbrreg-members-table .column-registered {
-	width: 12%;
-}
-
-.mbrreg-members-table .column-actions {
-	width: 20%;
-}
-
-.mbrreg-members-table .column-actions .button {
-	margin-right: 5px;
-}
-
-/* Search Form */
-.mbrreg-search-form {
-	float: right;
-	margin-bottom: 10px;
-}
-
-/* Admin Columns Layout */
-.mbrreg-admin-columns {
-	display: flex;
-	gap: 20px;
-	flex-wrap: wrap;
-}
-
-.mbrreg-admin-column {
-	flex: 1;
-	min-width: 300px;
-}
-
-.mbrreg-add-field-column {
-	max-width: 400px;
-}
-
-.mbrreg-fields-list-column {
-	flex: 2;
-}
-
-.mbrreg-admin-box {
-	background: #fff;
-	border: 1px solid #ccd0d4;
-	padding: 15px 20px;
-	margin-bottom: 20px;
-}
-
-.mbrreg-admin-box h2 {
-	margin-top: 0;
-	padding-bottom: 10px;
-	border-bottom: 1px solid #eee;
+	background: #f9f9f9;
+	border-radius: 4px;
 }
 
 /* Modal Styles */
 .mbrreg-modal {
 	position: fixed;
-	z-index: 100000;
-	left: 0;
 	top: 0;
+	left: 0;
 	width: 100%;
 	height: 100%;
-	background-color: rgba(0, 0, 0, 0.6);
+	background: rgba(0, 0, 0, 0.5);
+	z-index: 100000;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 }
 
 .mbrreg-modal-content {
-	background-color: #fff;
-	padding: 20px 30px;
+	background: #fff;
 	border-radius: 4px;
-	max-width: 600px;
+	max-width: 500px;
 	width: 90%;
 	max-height: 90vh;
-	overflow-y: auto;
-	position: relative;
+	overflow: auto;
+}
+
+.mbrreg-modal-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 15px 20px;
+	border-bottom: 1px solid #ddd;
+}
+
+.mbrreg-modal-header h2 {
+	margin: 0;
 }
 
 .mbrreg-modal-close {
-	position: absolute;
-	right: 15px;
-	top: 10px;
+	background: none;
+	border: none;
 	font-size: 24px;
 	cursor: pointer;
 	color: #666;
+	padding: 0;
+	line-height: 1;
 }
 
 .mbrreg-modal-close:hover {
 	color: #000;
 }
 
-/* Form Styles */
-.mbrreg-admin-form .form-table th {
-	width: 150px;
+.mbrreg-modal-body {
+	padding: 20px;
 }
 
-.mbrreg-admin-form .required {
-	color: #dc3545;
+/* Import/Export Styles */
+.mbrreg-import-instructions {
+	background: #f9f9f9;
+	padding: 15px;
+	border-radius: 4px;
+	margin-bottom: 20px;
+}
+
+.mbrreg-import-instructions h4 {
+	margin-top: 0;
+}
+
+.mbrreg-import-instructions ol {
+	margin-bottom: 0;
+}
+
+.mbrreg-import-results {
+	margin-top: 20px;
+	padding: 15px;
+	background: #f0f0f0;
+	border-radius: 4px;
+}
+
+.mbrreg-sample-csv,
+.mbrreg-export-info {
+	margin-top: 30px;
+	padding-top: 20px;
+	border-top: 1px solid #ddd;
+}
+
+.mbrreg-export-info ul {
+	margin-bottom: 0;
+}
+
+/* Settings Page */
+.mbrreg-settings-section {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	padding: 20px;
+	margin-bottom: 20px;
+}
+
+.mbrreg-settings-section h2 {
+	margin-top: 0;
+	padding-bottom: 10px;
+	border-bottom: 1px solid #eee;
+}
+
+.mbrreg-shortcodes-table th {
+	width: 250px;
+}
+
+.mbrreg-shortcodes-table code {
+	background: #f0f0f0;
+	padding: 2px 6px;
+}
+
+/* Spinner */
+.mbrreg-admin-form .spinner {
+	float: none;
+	margin-left: 10px;
 }
 
 /* Responsive */
 @media screen and (max-width: 782px) {
-	.mbrreg-admin-columns {
+	.mbrreg-admin-columns,
+	.mbrreg-admin-sections {
 		flex-direction: column;
 	}
 
-	.mbrreg-add-field-column,
-	.mbrreg-fields-list-column {
-		max-width: 100%;
-	}
-
-	.mbrreg-members-table .column-admin,
-	.mbrreg-members-table .column-registered {
-		display: none;
+	.mbrreg-admin-column,
+	.mbrreg-admin-column-wide,
+	.mbrreg-admin-section {
+		min-width: 100%;
 	}
 }

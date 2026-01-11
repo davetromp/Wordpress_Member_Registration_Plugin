@@ -55,7 +55,7 @@ class Mbrreg_Activator {
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-		// Members table.
+		// Members table - now supports multiple members per user.
 		$table_members = $table_prefix . 'members';
 		$sql_members   = "CREATE TABLE {$table_members} (
 			id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -72,7 +72,7 @@ class Mbrreg_Activator {
 			created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
 			updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
 			PRIMARY KEY (id),
-			UNIQUE KEY user_id (user_id),
+			KEY user_id (user_id),
 			KEY status (status),
 			KEY is_admin (is_admin)
 		) {$charset_collate};";
@@ -88,6 +88,7 @@ class Mbrreg_Activator {
 			field_type varchar(50) DEFAULT 'text' NOT NULL,
 			field_options text DEFAULT '' NOT NULL,
 			is_required tinyint(1) DEFAULT 0 NOT NULL,
+			is_admin_only tinyint(1) DEFAULT 0 NOT NULL,
 			field_order int(11) DEFAULT 0 NOT NULL,
 			created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
 			updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
@@ -126,17 +127,18 @@ class Mbrreg_Activator {
 	 */
 	private static function set_default_options() {
 		$default_options = array(
-			'require_first_name'    => false,
-			'require_last_name'     => false,
-			'require_address'       => false,
-			'require_telephone'     => false,
-			'require_date_of_birth' => false,
+			'require_first_name'     => false,
+			'require_last_name'      => false,
+			'require_address'        => false,
+			'require_telephone'      => false,
+			'require_date_of_birth'  => false,
 			'require_place_of_birth' => false,
-			'email_from_name'       => get_bloginfo( 'name' ),
-			'email_from_address'    => get_option( 'admin_email' ),
-			'registration_page_id'  => 0,
-			'login_redirect_page'   => 0,
-			'allow_registration'    => true,
+			'email_from_name'        => get_bloginfo( 'name' ),
+			'email_from_address'     => get_option( 'admin_email' ),
+			'registration_page_id'   => 0,
+			'login_redirect_page'    => 0,
+			'allow_registration'     => true,
+			'allow_multiple_members' => true,
 		);
 
 		foreach ( $default_options as $key => $value ) {
@@ -161,6 +163,7 @@ class Mbrreg_Activator {
 			$admin_role->add_cap( 'mbrreg_manage_settings' );
 			$admin_role->add_cap( 'mbrreg_manage_custom_fields' );
 			$admin_role->add_cap( 'mbrreg_export_members' );
+			$admin_role->add_cap( 'mbrreg_import_members' );
 		}
 	}
 }

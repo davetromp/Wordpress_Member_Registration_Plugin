@@ -24,38 +24,40 @@ if ( $activation_success ) {
 }
 ?>
 
-<div class="mbrreg-form-container mbrreg-login-form-container">
+<div class="mbrreg-form-container">
 	<?php if ( $activation_error ) : ?>
-		<div class="mbrreg-message mbrreg-error">
-			<?php echo esc_html( $activation_error ); ?>
-		</div>
+		<div class="mbrreg-message mbrreg-error"><?php echo esc_html( $activation_error ); ?></div>
 	<?php endif; ?>
 
 	<?php if ( $activation_success ) : ?>
-		<div class="mbrreg-message mbrreg-success">
-			<?php echo esc_html( $activation_success ); ?>
-		</div>
+		<div class="mbrreg-message mbrreg-success"><?php echo esc_html( $activation_success ); ?></div>
 	<?php endif; ?>
 
 	<form id="mbrreg-login-form" class="mbrreg-form" method="post">
-		<h3 class="mbrreg-form-title"><?php esc_html_e( 'Member Login', 'member-registration-plugin' ); ?></h3>
+		<h2 class="mbrreg-form-title"><?php esc_html_e( 'Login', 'member-registration-plugin' ); ?></h2>
 
 		<div class="mbrreg-form-messages"></div>
 
 		<div class="mbrreg-form-row">
-			<label for="mbrreg-login-username"><?php esc_html_e( 'Username or Email', 'member-registration-plugin' ); ?> <span class="required">*</span></label>
+			<label for="mbrreg-login-username">
+				<?php esc_html_e( 'Username or Email', 'member-registration-plugin' ); ?>
+				<span class="required">*</span>
+			</label>
 			<input type="text" id="mbrreg-login-username" name="username" required>
 		</div>
 
 		<div class="mbrreg-form-row">
-			<label for="mbrreg-login-password"><?php esc_html_e( 'Password', 'member-registration-plugin' ); ?> <span class="required">*</span></label>
+			<label for="mbrreg-login-password">
+				<?php esc_html_e( 'Password', 'member-registration-plugin' ); ?>
+				<span class="required">*</span>
+			</label>
 			<input type="password" id="mbrreg-login-password" name="password" required>
 		</div>
 
 		<div class="mbrreg-form-row mbrreg-checkbox-row">
 			<label>
 				<input type="checkbox" name="remember" value="1">
-				<?php esc_html_e( 'Remember me', 'member-registration-plugin' ); ?>
+				<?php esc_html_e( 'Remember Me', 'member-registration-plugin' ); ?>
 			</label>
 		</div>
 
@@ -66,7 +68,9 @@ if ( $activation_success ) {
 		</div>
 
 		<div class="mbrreg-form-links">
-			<a href="<?php echo esc_url( wp_lostpassword_url() ); ?>"><?php esc_html_e( 'Forgot your password?', 'member-registration-plugin' ); ?></a>
+			<a href="<?php echo esc_url( wp_lostpassword_url() ); ?>">
+				<?php esc_html_e( 'Forgot your password?', 'member-registration-plugin' ); ?>
+			</a>
 		</div>
 	</form>
 </div>

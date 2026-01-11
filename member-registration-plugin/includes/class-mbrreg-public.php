@@ -76,16 +76,22 @@ class Mbrreg_Public {
 			'mbrreg-public',
 			'mbrregPublic',
 			array(
-				'ajaxUrl'              => admin_url( 'admin-ajax.php' ),
-				'registerNonce'        => wp_create_nonce( 'mbrreg_register_nonce' ),
-				'loginNonce'           => wp_create_nonce( 'mbrreg_login_nonce' ),
-				'updateProfileNonce'   => wp_create_nonce( 'mbrreg_update_profile_nonce' ),
-				'setInactiveNonce'     => wp_create_nonce( 'mbrreg_set_inactive_nonce' ),
-				'logoutNonce'          => wp_create_nonce( 'mbrreg_logout_nonce' ),
-				'processing'           => __( 'Processing...', 'member-registration-plugin' ),
-				'confirmInactive'      => __( 'Are you sure you want to deactivate your membership? You will be logged out.', 'member-registration-plugin' ),
-				'confirmLogout'        => __( 'Are you sure you want to log out?', 'member-registration-plugin' ),
-				'passwordMismatch'     => __( 'Passwords do not match.', 'member-registration-plugin' ),
+				'ajaxUrl'                => admin_url( 'admin-ajax.php' ),
+				'registerNonce'          => wp_create_nonce( 'mbrreg_register_nonce' ),
+				'loginNonce'             => wp_create_nonce( 'mbrreg_login_nonce' ),
+				'updateProfileNonce'     => wp_create_nonce( 'mbrreg_update_profile_nonce' ),
+				'setInactiveNonce'       => wp_create_nonce( 'mbrreg_set_inactive_nonce' ),
+				'logoutNonce'            => wp_create_nonce( 'mbrreg_logout_nonce' ),
+				'addMemberNonce'         => wp_create_nonce( 'mbrreg_add_member_nonce' ),
+				'processing'             => __( 'Processing...', 'member-registration-plugin' ),
+				'confirmDeactivate'      => __( 'Are you sure you want to deactivate this membership? If this is your only active membership, you will be logged out.', 'member-registration-plugin' ),
+				'confirmDeactivateTitle' => __( 'Deactivate Membership', 'member-registration-plugin' ),
+				'confirmLogout'          => __( 'Are you sure you want to log out?', 'member-registration-plugin' ),
+				'confirmLogoutTitle'     => __( 'Log Out', 'member-registration-plugin' ),
+				'passwordMismatch'       => __( 'Passwords do not match.', 'member-registration-plugin' ),
+				'errorGeneral'           => __( 'An error occurred. Please try again.', 'member-registration-plugin' ),
+				'errorTitle'             => __( 'Error', 'member-registration-plugin' ),
+				'successTitle'           => __( 'Success', 'member-registration-plugin' ),
 			)
 		);
 	}
@@ -115,11 +121,6 @@ class Mbrreg_Public {
 		} else {
 			// Store success message.
 			set_transient( 'mbrreg_activation_success', __( 'Your account has been activated! You can now log in.', 'member-registration-plugin' ), 60 );
-
-			// Send welcome email.
-			$database = new Mbrreg_Database();
-			$member   = $database->get_member_by_activation_key( '' ); // Key is cleared, need to find by other means.
-			// Note: The member is found by the initial key check in activate().
 		}
 
 		// Redirect to remove query params.

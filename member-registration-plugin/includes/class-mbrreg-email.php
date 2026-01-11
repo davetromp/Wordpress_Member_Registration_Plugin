@@ -97,6 +97,76 @@ Best regards,
 	}
 
 	/**
+	 * Send activation email for imported members.
+	 *
+	 * @since 1.1.0
+	 * @param int    $user_id        WordPress user ID.
+	 * @param string $activation_key Activation key.
+	 * @param array  $data           Import data.
+	 * @return bool Whether the email was sent successfully.
+	 */
+	public function send_import_activation_email( $user_id, $activation_key, $data = array() ) {
+		$user = get_user_by( 'ID', $user_id );
+
+		if ( ! $user ) {
+			return false;
+		}
+
+		$activation_url = add_query_arg(
+			array(
+				'mbrreg_action' => 'activate',
+				'key'           => $activation_key,
+			),
+			home_url( '/' )
+		);
+
+		// Get member area page URL.
+		$page_id  = get_option( 'mbrreg_registration_page_id', 0 );
+		$page_url = $page_id ? get_permalink( $page_id ) : home_url( '/' );
+
+		$subject = sprintf(
+			/* translators: %s: Site name */
+			__( 'You have been registered as a member at %s', 'member-registration-plugin' ),
+			get_bloginfo( 'name' )
+		);
+
+		$message = sprintf(
+			/* translators: 1: User display name or email, 2: Site name, 3: Activation URL, 4: Member area URL, 5: Username */
+			__(
+				'Hello %1$s,
+
+You have been registered as a member at %2$s.
+
+Please click the following link to activate your account:
+
+%3$s
+
+After activation, you can log in and review/update your details at:
+%4$s
+
+Your username is: %5$s
+
+If you need to set a password, please use the password reset function on the login page.
+
+If you did not expect this email, please contact the club administrator.
+
+Best regards,
+%2$s',
+				'member-registration-plugin'
+			),
+			! empty( $data['first_name'] ) ? $data['first_name'] : $user->user_email,
+			get_bloginfo( 'name' ),
+			$activation_url,
+			$page_url,
+			$user->user_login
+		);
+
+		$headers = $this->get_email_headers();
+
+		return wp_mail( $user->user_email, $subject, $message, $headers );
+	}
+
+	/**
 	 * Send notification to admin about new registration.
 	 *
 	 * @since 1.0.0
@@ -147,6 +217,10 @@ You can view and manage members in the WordPress admin area.',
 			return false;
 		}
 
+		// Get member area page URL.
+		$page_id  = get_option( 'mbrreg_registration_page_id', 0 );
+		$page_url = $page_id ? get_permalink( $page_id ) : wp_login_url();
+
 		$subject = sprintf(
 			/* translators: %s: Site name */
 			__( 'Welcome to %s!', 'member-registration-plugin' ),
@@ -160,7 +234,8 @@ You can view and manage members in the WordPress admin area.',
 
 Your account at %2$s has been activated successfully!
 
-You can now log in at: %3$s
+You can now log in and manage your membership details at:
+%3$s
 
 Best regards,
 %2$s',
@@ -168,7 +243,7 @@ Best regards,
 			),
 			$user->display_name,
 			get_bloginfo( 'name' ),
-			wp_login_url()
+			$page_url
 		);
 
 		$headers = $this->get_email_headers();

@@ -1,0 +1,100 @@
+=== Member Registration Plugin ===
+Contributors: sportsclubdeveloper
+Tags: members, registration, membership, sports club, user management
+Requires at least: 5.0
+Tested up to: 6.4
+Stable tag: 1.1.0
+Requires PHP: 7.4
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+
+A comprehensive member registration and management system for sports clubs. Allows users to register and manage multiple members under one account.
+
+== Description ==
+
+Member Registration Plugin is a powerful yet easy-to-use WordPress plugin designed specifically for sports clubs and organizations that need to manage member registrations. 
+
+**Key Features:**
+
+* **Multiple Members Per Account** - Perfect for families! Parents can register multiple children or family members under a single account.
+* **Custom Fields** - Create unlimited custom fields to collect any additional information you need.
+* **Admin-Only Fields** - Some fields can be marked as "admin only" - visible to members but only editable by administrators. Great for tracking payment status, membership levels, etc.
+* **Email Notifications** - Automatic activation emails sent to new members with customizable sender information.
+* **CSV Import/Export** - Bulk import members from CSV files or export member data for reporting.
+* **Frontend Member Area** - Beautiful, responsive member dashboard where users can view and update their information.
+* **Member Admins** - Designate certain members as "member admins" who can help manage other members.
+* **Multi-language Support** - Fully translatable with Dutch translation included.
+
+**Perfect For:**
+
+* Sports clubs (football, tennis, swimming, etc.)
+* Youth organizations
+* Community clubs
+* Any organization needing family-based member management
+
+**Shortcodes:**
+
+* `[mbrreg_member_area]` - Complete member area with login, registration, and dashboard
+* `[mbrreg_login_form]` - Standalone login form
+* `[mbrreg_register_form]` - Standalone registration form
+* `[mbrreg_member_dashboard]` - Member dashboard (for logged-in users)
+
+== Installation ==
+
+1. Upload the `member-registration-plugin` folder to the `/wp-content/plugins/` directory
+2. Activate the plugin through the 'Plugins' menu in WordPress
+3. Go to 'Members' > 'Settings' to configure the plugin
+4. Create a new page and add the `[mbrreg_member_area]` shortcode
+5. Set this page as the "Member Area Page" in the plugin settings
+
+== Frequently Asked Questions ==
+
+= Can one user have multiple member profiles? =
+
+Yes! This is one of the key features of the plugin. A single user account (identified by email) can have multiple member profiles. This is perfect for parents who want to register multiple children.
+
+= What happens when I import members via CSV? =
+
+When you import members, the plugin creates WordPress user accounts for each unique email address and sends activation emails. Members must click the activation link to activate their account. If an email already exists in the system, the new member will be added to that existing account.
+
+= Can I create custom fields? =
+
+Yes, you can create unlimited custom fields with various types: text, textarea, email, number, date, dropdown, checkbox, and radio buttons. Fields can be marked as required and/or admin-only.
+
+= What are admin-only fields? =
+
+Admin-only fields are visible to members but can only be edited by administrators. This is useful for tracking information like payment status, membership levels, or internal notes.
+
+= Is the plugin translatable? =
+
+Yes! The plugin is fully translatable and includes a Dutch translation. You can add translations for other languages using the provided POT file.
+
+== Screenshots ==
+
+1. Member dashboard showing multiple members under one account
+2. Registration form with custom fields
+3. Admin members list
+4. Custom fields management
+5. Import/Export page
+6. Plugin settings
+
+== Changelog ==
+
+= 1.1.0 =
+* Added: Support for multiple members per user account
+* Added: Admin-only custom fields
+* Added: CSV import with automatic activation emails
+* Added: CSV export functionality
+* Added: Custom modal dialogs (replacing JavaScript alerts)
+* Added: Dutch translation
+* Added: "My Memberships" menu item in WordPress admin for regular users
+* Fixed: Form submission now properly refreshes the page after success
+* Improved: Better handling of member deactivation when multiple members exist
+
+= 1.0.0 =
+* Initial release
+
+== Upgrade Notice ==
+
+= 1.1.0 =
+Major update with support for multiple members per account, CSV import/export, and admin-only fields. Database will be automatically updated upon activation.

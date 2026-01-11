@@ -12,21 +12,32 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-// Get field requirements.
-$require_first_name     = get_option( 'mbrreg_require_first_name', false );
-$require_last_name      = get_option( 'mbrreg_require_last_name', false );
-$require_address        = get_option( 'mbrreg_require_address', false );
-$require_telephone      = get_option( 'mbrreg_require_telephone', false );
-$require_date_of_birth  = get_option( 'mbrreg_require_date_of_birth', false );
-$require_place_of_birth = get_option( 'mbrreg_require_place_of_birth', false );
-
-// Get custom fields instance for rendering.
+// Get custom fields handler for rendering.
 $custom_fields_handler = new Mbrreg_Custom_Fields();
+
+// Check for activation messages.
+$activation_error   = get_transient( 'mbrreg_activation_error' );
+$activation_success = get_transient( 'mbrreg_activation_success' );
+
+if ( $activation_error ) {
+	delete_transient( 'mbrreg_activation_error' );
+}
+if ( $activation_success ) {
+	delete_transient( 'mbrreg_activation_success' );
+}
 ?>
 
-<div class="mbrreg-form-container mbrreg-register-form-container">
+<div class="mbrreg-form-container">
+	<?php if ( $activation_error ) : ?>
+		<div class="mbrreg-message mbrreg-error"><?php echo esc_html( $activation_error ); ?></div>
+	<?php endif; ?>
+
+	<?php if ( $activation_success ) : ?>
+		<div class="mbrreg-message mbrreg-success"><?php echo esc_html( $activation_success ); ?></div>
+	<?php endif; ?>
+
 	<form id="mbrreg-register-form" class="mbrreg-form" method="post">
-		<h3 class="mbrreg-form-title"><?php esc_html_e( 'Member Registration', 'member-registration-plugin' ); ?></h3>
+		<h2 class="mbrreg-form-title"><?php esc_html_e( 'Register', 'member-registration-plugin' ); ?></h2>
 
 		<div class="mbrreg-form-messages"></div>
 
@@ -35,23 +46,35 @@ $custom_fields_handler = new Mbrreg_Custom_Fields();
 			<legend><?php esc_html_e( 'Account Details', 'member-registration-plugin' ); ?></legend>
 
 			<div class="mbrreg-form-row">
-				<label for="mbrreg-register-username"><?php esc_html_e( 'Username', 'member-registration-plugin' ); ?> <span class="required">*</span></label>
-				<input type="text" id="mbrreg-register-username" name="username" required>
+				<label for="mbrreg-email">
+					<?php esc_html_e( 'Email Address', 'member-registration-plugin' ); ?>
+					<span class="required">*</span>
+				</label>
+				<input type="email" id="mbrreg-email" name="email" required>
 			</div>
 
 			<div class="mbrreg-form-row">
-				<label for="mbrreg-register-email"><?php esc_html_e( 'Email Address', 'member-registration-plugin' ); ?> <span class="required">*</span></label>
-				<input type="email" id="mbrreg-register-email" name="email" required>
+				<label for="mbrreg-username">
+					<?php esc_html_e( 'Username', 'member-registration-plugin' ); ?>
+				</label>
+				<input type="text" id="mbrreg-username" name="username">
+				<span class="mbrreg-field-note"><?php esc_html_e( 'Leave blank to auto-generate from email.', 'member-registration-plugin' ); ?></span>
 			</div>
 
 			<div class="mbrreg-form-row">
-				<label for="mbrreg-register-password"><?php esc_html_e( 'Password', 'member-registration-plugin' ); ?> <span class="required">*</span></label>
-				<input type="password" id="mbrreg-register-password" name="password" required minlength="8">
+				<label for="mbrreg-password">
+					<?php esc_html_e( 'Password', 'member-registration-plugin' ); ?>
+					<span class="required">*</span>
+				</label>
+				<input type="password" id="mbrreg-password" name="password" required minlength="8">
 			</div>
 
 			<div class="mbrreg-form-row">
-				<label for="mbrreg-register-password-confirm"><?php esc_html_e( 'Confirm Password', 'member-registration-plugin' ); ?> <span class="required">*</span></label>
-				<input type="password" id="mbrreg-register-password-confirm" name="password_confirm" required minlength="8">
+				<label for="mbrreg-password-confirm">
+					<?php esc_html_e( 'Confirm Password', 'member-registration-plugin' ); ?>
+					<span class="required">*</span>
+				</label>
+				<input type="password" id="mbrreg-password-confirm" name="password_confirm" required minlength="8">
 			</div>
 		</fieldset>
 
@@ -60,67 +83,67 @@ $custom_fields_handler = new Mbrreg_Custom_Fields();
 			<legend><?php esc_html_e( 'Personal Details', 'member-registration-plugin' ); ?></legend>
 
 			<div class="mbrreg-form-row">
-				<label for="mbrreg-register-first-name">
+				<label for="mbrreg-first-name">
 					<?php esc_html_e( 'First Name', 'member-registration-plugin' ); ?>
-					<?php if ( $require_first_name ) : ?>
+					<?php if ( get_option( 'mbrreg_require_first_name', false ) ) : ?>
 						<span class="required">*</span>
 					<?php endif; ?>
 				</label>
-				<input type="text" id="mbrreg-register-first-name" name="first_name" <?php echo $require_first_name ? 'required' : ''; ?>>
+				<input type="text" id="mbrreg-first-name" name="first_name" <?php echo get_option( 'mbrreg_require_first_name', false ) ? 'required' : ''; ?>>
 			</div>
 
 			<div class="mbrreg-form-row">
-				<label for="mbrreg-register-last-name">
+				<label for="mbrreg-last-name">
 					<?php esc_html_e( 'Last Name', 'member-registration-plugin' ); ?>
-					<?php if ( $require_last_name ) : ?>
+					<?php if ( get_option( 'mbrreg_require_last_name', false ) ) : ?>
 						<span class="required">*</span>
 					<?php endif; ?>
 				</label>
-				<input type="text" id="mbrreg-register-last-name" name="last_name" <?php echo $require_last_name ? 'required' : ''; ?>>
+				<input type="text" id="mbrreg-last-name" name="last_name" <?php echo get_option( 'mbrreg_require_last_name', false ) ? 'required' : ''; ?>>
 			</div>
 
 			<div class="mbrreg-form-row">
-				<label for="mbrreg-register-address">
+				<label for="mbrreg-address">
 					<?php esc_html_e( 'Address', 'member-registration-plugin' ); ?>
-					<?php if ( $require_address ) : ?>
+					<?php if ( get_option( 'mbrreg_require_address', false ) ) : ?>
 						<span class="required">*</span>
 					<?php endif; ?>
 				</label>
-				<textarea id="mbrreg-register-address" name="address" rows="3" <?php echo $require_address ? 'required' : ''; ?>></textarea>
+				<textarea id="mbrreg-address" name="address" rows="3" <?php echo get_option( 'mbrreg_require_address', false ) ? 'required' : ''; ?>></textarea>
 			</div>
 
 			<div class="mbrreg-form-row">
-				<label for="mbrreg-register-telephone">
+				<label for="mbrreg-telephone">
 					<?php esc_html_e( 'Telephone Number', 'member-registration-plugin' ); ?>
-					<?php if ( $require_telephone ) : ?>
+					<?php if ( get_option( 'mbrreg_require_telephone', false ) ) : ?>
 						<span class="required">*</span>
 					<?php endif; ?>
 				</label>
-				<input type="tel" id="mbrreg-register-telephone" name="telephone" <?php echo $require_telephone ? 'required' : ''; ?>>
+				<input type="tel" id="mbrreg-telephone" name="telephone" <?php echo get_option( 'mbrreg_require_telephone', false ) ? 'required' : ''; ?>>
 			</div>
 
 			<div class="mbrreg-form-row">
-				<label for="mbrreg-register-dob">
+				<label for="mbrreg-dob">
 					<?php esc_html_e( 'Date of Birth', 'member-registration-plugin' ); ?>
-					<?php if ( $require_date_of_birth ) : ?>
+					<?php if ( get_option( 'mbrreg_require_date_of_birth', false ) ) : ?>
 						<span class="required">*</span>
 					<?php endif; ?>
 				</label>
-				<input type="date" id="mbrreg-register-dob" name="date_of_birth" <?php echo $require_date_of_birth ? 'required' : ''; ?>>
+				<input type="date" id="mbrreg-dob" name="date_of_birth" <?php echo get_option( 'mbrreg_require_date_of_birth', false ) ? 'required' : ''; ?>>
 			</div>
 
 			<div class="mbrreg-form-row">
-				<label for="mbrreg-register-pob">
+				<label for="mbrreg-pob">
 					<?php esc_html_e( 'Place of Birth', 'member-registration-plugin' ); ?>
-					<?php if ( $require_place_of_birth ) : ?>
+					<?php if ( get_option( 'mbrreg_require_place_of_birth', false ) ) : ?>
 						<span class="required">*</span>
 					<?php endif; ?>
 				</label>
-				<input type="text" id="mbrreg-register-pob" name="place_of_birth" <?php echo $require_place_of_birth ? 'required' : ''; ?>>
+				<input type="text" id="mbrreg-pob" name="place_of_birth" <?php echo get_option( 'mbrreg_require_place_of_birth', false ) ? 'required' : ''; ?>>
 			</div>
 		</fieldset>
 
-		<!-- Custom Fields -->
+		<!-- Custom Fields (only user-editable) -->
 		<?php if ( ! empty( $custom_fields ) ) : ?>
 			<fieldset class="mbrreg-fieldset">
 				<legend><?php esc_html_e( 'Additional Information', 'member-registration-plugin' ); ?></legend>

@@ -15,7 +15,7 @@ if ( ! defined( 'WPINC' ) ) {
 /**
  * Class Mbrreg_Admin
  *
- * Handles admin area functionality.
+ * Handles admin functionality.
  *
  * @since 1.0.0
  */
@@ -38,15 +38,25 @@ class Mbrreg_Admin {
 	private $custom_fields;
 
 	/**
+	 * Email instance.
+	 *
+	 * @since 1.1.0
+	 * @var Mbrreg_Email
+	 */
+	private $email;
+
+	/**
 	 * Constructor.
 	 *
 	 * @since 1.0.0
 	 * @param Mbrreg_Member        $member        Member instance.
 	 * @param Mbrreg_Custom_Fields $custom_fields Custom fields instance.
+	 * @param Mbrreg_Email         $email         Email instance.
 	 */
-	public function __construct( Mbrreg_Member $member, Mbrreg_Custom_Fields $custom_fields ) {
+	public function __construct( Mbrreg_Member $member, Mbrreg_Custom_Fields $custom_fields, Mbrreg_Email $email = null ) {
 		$this->member        = $member;
 		$this->custom_fields = $custom_fields;
+		$this->email         = $email;
 	}
 
 	/**
@@ -57,9 +67,9 @@ class Mbrreg_Admin {
 	 */
 	public function init() {
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
-		add_action( 'admin_init', array( $this, 'handle_activation_redirect' ) );
+		add_action( 'admin_init', array( $this, 'handle_csv_export' ) );
 	}
 
 	/**
@@ -90,7 +100,7 @@ class Mbrreg_Admin {
 			array( $this, 'render_members_page' )
 		);
 
-		// Custom Fields submenu.
+		// Custom fields submenu.
 		add_submenu_page(
 			'mbrreg-members',
 			__( 'Custom Fields', 'member-registration-plugin' ),
@@ -98,6 +108,16 @@ class Mbrreg_Admin {
 			'mbrreg_manage_custom_fields',
 			'mbrreg-custom-fields',
 			array( $this, 'render_custom_fields_page' )
+		);
+
+		// Import/Export submenu.
+		add_submenu_page(
+			'mbrreg-members',
+			__( 'Import / Export', 'member-registration-plugin' ),
+			__( 'Import / Export', 'member-registration-plugin' ),
+			'mbrreg_import_members',
+			'mbrreg-import-export',
+			array( $this, 'render_import_export_page' )
 		);
 
 		// Settings submenu.
@@ -118,8 +138,8 @@ class Mbrreg_Admin {
 	 * @param string $hook Current admin page hook.
 	 * @return void
 	 */
-	public function enqueue_admin_assets( $hook ) {
-		// Only load on plugin pages.
+	public function enqueue_assets( $hook ) {
+		// Only load on our admin pages.
 		if ( strpos( $hook, 'mbrreg' ) === false ) {
 			return;
 		}
@@ -143,13 +163,18 @@ class Mbrreg_Admin {
 			'mbrreg-admin',
 			'mbrregAdmin',
 			array(
-				'ajaxUrl'         => admin_url( 'admin-ajax.php' ),
-				'nonce'           => wp_create_nonce( 'mbrreg_admin_nonce' ),
-				'confirmDelete'   => __( 'Are you sure you want to delete this item?', 'member-registration-plugin' ),
-				'confirmBulk'     => __( 'Are you sure you want to perform this action on the selected items?', 'member-registration-plugin' ),
-				'processing'      => __( 'Processing...', 'member-registration-plugin' ),
-				'selectAction'    => __( 'Please select an action.', 'member-registration-plugin' ),
-				'selectItems'     => __( 'Please select at least one item.', 'member-registration-plugin' ),
+				'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
+				'nonce'            => wp_create_nonce( 'mbrreg_admin_nonce' ),
+				'confirmDelete'    => __( 'Are you sure you want to delete this member? This action cannot be undone.', 'member-registration-plugin' ),
+				'confirmBulk'      => __( 'Are you sure you want to perform this action on the selected members?', 'member-registration-plugin' ),
+				'confirmFieldDelete' => __( 'Are you sure you want to delete this custom field? All associated data will be lost.', 'member-registration-plugin' ),
+				'processing'       => __( 'Processing...', 'member-registration-plugin' ),
+				'success'          => __( 'Success!', 'member-registration-plugin' ),
+				'error'            => __( 'An error occurred.', 'member-registration-plugin' ),
+				'selectMembers'    => __( 'Please select at least one member.', 'member-registration-plugin' ),
+				'selectAction'     => __( 'Please select an action.', 'member-registration-plugin' ),
+				'importSuccess'    => __( 'Import completed successfully!', 'member-registration-plugin' ),
+				'exportSuccess'    => __( 'Export completed successfully!', 'member-registration-plugin' ),
 			)
 		);
 	}
@@ -161,8 +186,9 @@ class Mbrreg_Admin {
 	 * @return void
 	 */
 	public function register_settings() {
-		// General settings.
+		// Registration settings.
 		register_setting( 'mbrreg_settings', 'mbrreg_allow_registration' );
+		register_setting( 'mbrreg_settings', 'mbrreg_allow_multiple_members' );
 		register_setting( 'mbrreg_settings', 'mbrreg_registration_page_id' );
 		register_setting( 'mbrreg_settings', 'mbrreg_login_redirect_page' );
 
@@ -180,68 +206,77 @@ class Mbrreg_Admin {
 	}
 
 	/**
-	 * Handle activation redirect.
+	 * Handle CSV export download.
 	 *
-	 * @since 1.0.0
+	 * @since 1.1.0
 	 * @return void
 	 */
-	public function handle_activation_redirect() {
-		if ( get_transient( 'mbrreg_activation_redirect' ) ) {
-			delete_transient( 'mbrreg_activation_redirect' );
-
-			if ( ! isset( $_GET['activate-multi'] ) ) {
-				wp_safe_redirect( admin_url( 'admin.php?page=mbrreg-settings' ) );
-				exit;
-			}
+	public function handle_csv_export() {
+		if ( ! isset( $_GET['mbrreg_export'] ) || ! isset( $_GET['_wpnonce'] ) ) {
+			return;
 		}
+
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'mbrreg_export_csv' ) ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'mbrreg_export_members' ) ) {
+			return;
+		}
+
+		$status = isset( $_GET['status'] ) ? sanitize_text_field( wp_unslash( $_GET['status'] ) ) : '';
+
+		$args = array();
+		if ( ! empty( $status ) ) {
+			$args['status'] = $status;
+		}
+
+		$csv      = $this->member->export_csv( $args );
+		$filename = 'members-export-' . gmdate( 'Y-m-d' ) . '.csv';
+
+		header( 'Content-Type: text/csv; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename=' . $filename );
+		header( 'Pragma: no-cache' );
+		header( 'Expires: 0' );
+
+		echo $csv; // phpcs:ignore
+		exit;
 	}
 
 	/**
-	 * Render members page.
+	 * Render members list page.
 	 *
 	 * @since 1.0.0
 	 * @return void
 	 */
 	public function render_members_page() {
-		// Check for edit action.
-		$action = isset( $_GET['action'] ) ? sanitize_text_field( wp_unslash( $_GET['action'] ) ) : 'list';
-		$member_id = isset( $_GET['member_id'] ) ? absint( $_GET['member_id'] ) : 0;
-
-		if ( 'edit' === $action && $member_id ) {
-			$member = $this->member->get( $member_id );
-			$custom_fields = $this->custom_fields->get_all();
-			include MBRREG_PLUGIN_PATH . 'admin/partials/mbrreg-admin-member-edit.php';
-		} else {
-			// Get query parameters.
-			$status = isset( $_GET['status'] ) ? sanitize_text_field( wp_unslash( $_GET['status'] ) ) : '';
-			$search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
-			$paged  = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1;
-
-			$per_page = 20;
-			$offset   = ( $paged - 1 ) * $per_page;
-
-			$args = array(
-				'status' => $status,
-				'search' => $search,
-				'limit'  => $per_page,
-				'offset' => $offset,
-			);
-
-			$members = $this->member->get_all( $args );
-			$total   = $this->member->count( array( 'status' => $status, 'search' => $search ) );
-
-			$total_pages = ceil( $total / $per_page );
-
-			// Get status counts.
-			$status_counts = array(
-				'all'      => $this->member->count(),
-				'active'   => $this->member->count( array( 'status' => 'active' ) ),
-				'inactive' => $this->member->count( array( 'status' => 'inactive' ) ),
-				'pending'  => $this->member->count( array( 'status' => 'pending' ) ),
-			);
-
-			include MBRREG_PLUGIN_PATH . 'admin/partials/mbrreg-admin-members.php';
+		// Check if editing a member.
+		if ( isset( $_GET['action'] ) && 'edit' === $_GET['action'] && isset( $_GET['member_id'] ) ) {
+			$this->render_member_edit_page();
+			return;
 		}
+
+		include MBRREG_PLUGIN_PATH . 'admin/partials/mbrreg-admin-members.php';
+	}
+
+	/**
+	 * Render member edit page.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	private function render_member_edit_page() {
+		$member_id = absint( $_GET['member_id'] );
+		$member    = $this->member->get( $member_id );
+
+		if ( ! $member ) {
+			echo '<div class="wrap"><div class="notice notice-error"><p>' . esc_html__( 'Member not found.', 'member-registration-plugin' ) . '</p></div></div>';
+			return;
+		}
+
+		$custom_fields = $this->custom_fields->get_all();
+
+		include MBRREG_PLUGIN_PATH . 'admin/partials/mbrreg-admin-member-edit.php';
 	}
 
 	/**
@@ -252,9 +287,18 @@ class Mbrreg_Admin {
 	 */
 	public function render_custom_fields_page() {
 		$custom_fields = $this->custom_fields->get_all();
-		$field_types   = Mbrreg_Custom_Fields::$field_types;
 
 		include MBRREG_PLUGIN_PATH . 'admin/partials/mbrreg-admin-custom-fields.php';
+	}
+
+	/**
+	 * Render import/export page.
+	 *
+	 * @since 1.1.0
+	 * @return void
+	 */
+	public function render_import_export_page() {
+		include MBRREG_PLUGIN_PATH . 'admin/partials/mbrreg-admin-import-export.php';
 	}
 
 	/**
@@ -264,9 +308,6 @@ class Mbrreg_Admin {
 	 * @return void
 	 */
 	public function render_settings_page() {
-		// Get all pages for dropdown.
-		$pages = get_pages();
-
 		include MBRREG_PLUGIN_PATH . 'admin/partials/mbrreg-admin-settings.php';
 	}
 }

@@ -75,36 +75,64 @@ class Mbrreg_Member {
 	 * Register a new member.
 	 *
 	 * @since 1.0.0
-	 * @param array $data Registration data.
+	 * @param array $data      Registration data.
+	 * @param bool  $is_import Whether this is an import operation.
 	 * @return int|WP_Error Member ID on success, WP_Error on failure.
 	 */
-	public function register( $data ) {
-		// Validate required fields.
-		if ( empty( $data['username'] ) ) {
-			return new WP_Error( 'missing_username', __( 'Username is required.', 'member-registration-plugin' ) );
+	public function register( $data, $is_import = false ) {
+		$user_id       = 0;
+		$is_new_user   = true;
+		$existing_user = null;
+
+		// Check if adding to existing logged-in user.
+		if ( isset( $data['add_to_existing_user'] ) && $data['add_to_existing_user'] && is_user_logged_in() ) {
+			$user_id     = get_current_user_id();
+			$is_new_user = false;
+		} elseif ( ! empty( $data['email'] ) ) {
+			// Check if user with this email already exists.
+			$existing_user = get_user_by( 'email', $data['email'] );
+
+			if ( $existing_user ) {
+				// Allow adding member to existing user if allowed.
+				if ( get_option( 'mbrreg_allow_multiple_members', true ) ) {
+					$user_id     = $existing_user->ID;
+					$is_new_user = false;
+				} else {
+					return new WP_Error( 'email_exists', __( 'This email address is already registered.', 'member-registration-plugin' ) );
+				}
+			}
 		}
 
-		if ( empty( $data['email'] ) ) {
-			return new WP_Error( 'missing_email', __( 'Email address is required.', 'member-registration-plugin' ) );
-		}
+		// Validate required fields for new user.
+		if ( $is_new_user ) {
+			if ( empty( $data['username'] ) && empty( $data['email'] ) ) {
+				return new WP_Error( 'missing_credentials', __( 'Username or email is required.', 'member-registration-plugin' ) );
+			}
 
-		if ( empty( $data['password'] ) ) {
-			return new WP_Error( 'missing_password', __( 'Password is required.', 'member-registration-plugin' ) );
-		}
+			if ( empty( $data['email'] ) ) {
+				return new WP_Error( 'missing_email', __( 'Email address is required.', 'member-registration-plugin' ) );
+			}
 
-		// Validate email.
-		if ( ! is_email( $data['email'] ) ) {
-			return new WP_Error( 'invalid_email', __( 'Please enter a valid email address.', 'member-registration-plugin' ) );
-		}
+			// Validate email.
+			if ( ! is_email( $data['email'] ) ) {
+				return new WP_Error( 'invalid_email', __( 'Please enter a valid email address.', 'member-registration-plugin' ) );
+			}
 
-		// Check if username exists.
-		if ( username_exists( $data['username'] ) ) {
-			return new WP_Error( 'username_exists', __( 'This username is already registered.', 'member-registration-plugin' ) );
-		}
+			// Generate username from email if not provided.
+			if ( empty( $data['username'] ) ) {
+				$data['username'] = $this->generate_username_from_email( $data['email'] );
+			}
 
-		// Check if email exists.
-		if ( email_exists( $data['email'] ) ) {
-			return new WP_Error( 'email_exists', __( 'This email address is already registered.', 'member-registration-plugin' ) );
+			// Check if username exists.
+			if ( username_exists( $data['username'] ) ) {
+				// Generate unique username.
+				$data['username'] = $this->generate_unique_username( $data['username'] );
+			}
+
+			// Generate password if not provided (for imports).
+			if ( empty( $data['password'] ) ) {
+				$data['password'] = wp_generate_password( 12, true );
+			}
 		}
 
 		// Validate required member fields.
@@ -113,19 +141,22 @@ class Mbrreg_Member {
 			return $validation;
 		}
 
-		// Create WordPress user.
-		$user_id = wp_create_user(
-			sanitize_user( $data['username'] ),
-			$data['password'],
-			sanitize_email( $data['email'] )
-		);
+		// Create WordPress user if needed.
+		if ( $is_new_user ) {
+			$user_id = wp_create_user(
+				sanitize_user( $data['username'] ),
+				$data['password'],
+				sanitize_email( $data['email'] )
+			);
 
-		if ( is_wp_error( $user_id ) ) {
-			return $user_id;
+			if ( is_wp_error( $user_id ) ) {
+				return $user_id;
+			}
 		}
 
 		// Generate activation key.
 		$activation_key = wp_generate_password( 32, false );
+		$status         = $is_import ? 'pending' : 'pending';
 
 		// Prepare member data.
 		$member_data = array(
@@ -136,7 +167,7 @@ class Mbrreg_Member {
 			'telephone'      => isset( $data['telephone'] ) ? sanitize_text_field( $data['telephone'] ) : '',
 			'date_of_birth'  => ! empty( $data['date_of_birth'] ) ? sanitize_text_field( $data['date_of_birth'] ) : null,
 			'place_of_birth' => isset( $data['place_of_birth'] ) ? sanitize_text_field( $data['place_of_birth'] ) : '',
-			'status'         => 'pending',
+			'status'         => $status,
 			'is_admin'       => 0,
 			'activation_key' => $activation_key,
 		);
@@ -145,8 +176,10 @@ class Mbrreg_Member {
 		$member_id = $this->database->insert_member( $member_data );
 
 		if ( ! $member_id ) {
-			// Rollback: delete WordPress user.
-			wp_delete_user( $user_id );
+			// Rollback: delete WordPress user only if we created it.
+			if ( $is_new_user ) {
+				wp_delete_user( $user_id );
+			}
 			return new WP_Error( 'insert_failed', __( 'Failed to create member record.', 'member-registration-plugin' ) );
 		}
 
@@ -154,7 +187,11 @@ class Mbrreg_Member {
 		$this->save_custom_field_values( $member_id, $data );
 
 		// Send activation email.
-		$this->email->send_activation_email( $user_id, $activation_key );
+		if ( $is_import ) {
+			$this->email->send_import_activation_email( $user_id, $activation_key, $data );
+		} else {
+			$this->email->send_activation_email( $user_id, $activation_key );
+		}
 
 		/**
 		 * Fires after a new member is registered.
@@ -167,6 +204,37 @@ class Mbrreg_Member {
 		do_action( 'mbrreg_member_registered', $member_id, $user_id, $data );
 
 		return $member_id;
+	}
+
+	/**
+	 * Generate username from email.
+	 *
+	 * @since 1.1.0
+	 * @param string $email Email address.
+	 * @return string Generated username.
+	 */
+	private function generate_username_from_email( $email ) {
+		$username = sanitize_user( current( explode( '@', $email ) ), true );
+		return $username;
+	}
+
+	/**
+	 * Generate unique username.
+	 *
+	 * @since 1.1.0
+	 * @param string $username Base username.
+	 * @return string Unique username.
+	 */
+	private function generate_unique_username( $username ) {
+		$original = $username;
+		$counter  = 1;
+
+		while ( username_exists( $username ) ) {
+			$username = $original . $counter;
+			++$counter;
+		}
+
+		return $username;
 	}
 
 	/**
@@ -204,6 +272,9 @@ class Mbrreg_Member {
 			return new WP_Error( 'update_failed', __( 'Failed to activate account.', 'member-registration-plugin' ) );
 		}
 
+		// Send welcome email.
+		$this->email->send_welcome_email( $member->user_id );
+
 		/**
 		 * Fires after a member account is activated.
 		 *
@@ -220,11 +291,12 @@ class Mbrreg_Member {
 	 * Update member details.
 	 *
 	 * @since 1.0.0
-	 * @param int   $member_id Member ID.
-	 * @param array $data      Member data.
+	 * @param int   $member_id     Member ID.
+	 * @param array $data          Member data.
+	 * @param bool  $is_admin_edit Whether this is an admin edit.
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
-	public function update( $member_id, $data ) {
+	public function update( $member_id, $data, $is_admin_edit = false ) {
 		$member = $this->database->get_member( $member_id );
 
 		if ( ! $member ) {
@@ -281,11 +353,11 @@ class Mbrreg_Member {
 			}
 		}
 
-		// Update WordPress user data if email changed.
-		if ( isset( $data['email'] ) && is_email( $data['email'] ) ) {
+		// Update WordPress user data if email changed (admin only).
+		if ( $is_admin_edit && isset( $data['email'] ) && is_email( $data['email'] ) ) {
 			$user = get_user_by( 'ID', $member->user_id );
 			if ( $user && $user->user_email !== $data['email'] ) {
-				// Check if email is already used.
+				// Check if email is already used by another user.
 				$existing = email_exists( $data['email'] );
 				if ( $existing && $existing !== $member->user_id ) {
 					return new WP_Error( 'email_exists', __( 'This email address is already in use.', 'member-registration-plugin' ) );
@@ -313,7 +385,7 @@ class Mbrreg_Member {
 		}
 
 		// Save custom field values.
-		$this->save_custom_field_values( $member_id, $data );
+		$this->save_custom_field_values( $member_id, $data, $is_admin_edit );
 
 		/**
 		 * Fires after a member is updated.
@@ -331,8 +403,8 @@ class Mbrreg_Member {
 	 * Delete a member.
 	 *
 	 * @since 1.0.0
-	 * @param int  $member_id        Member ID.
-	 * @param bool $delete_wp_user   Whether to delete WordPress user too.
+	 * @param int  $member_id      Member ID.
+	 * @param bool $delete_wp_user Whether to delete WordPress user too.
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
 	public function delete( $member_id, $delete_wp_user = false ) {
@@ -344,6 +416,9 @@ class Mbrreg_Member {
 
 		$user_id = $member->user_id;
 
+		// Check if this is the last member for this user.
+		$member_count = $this->database->count_members_by_user_id( $user_id );
+
 		// Delete member.
 		$result = $this->database->delete_member( $member_id );
 
@@ -351,8 +426,8 @@ class Mbrreg_Member {
 			return new WP_Error( 'delete_failed', __( 'Failed to delete member.', 'member-registration-plugin' ) );
 		}
 
-		// Delete WordPress user if requested.
-		if ( $delete_wp_user && $user_id ) {
+		// Delete WordPress user if requested and this was the last member.
+		if ( $delete_wp_user && $user_id && 1 === $member_count ) {
 			wp_delete_user( $user_id );
 		}
 
@@ -376,7 +451,27 @@ class Mbrreg_Member {
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
 	public function set_inactive( $member_id ) {
-		return $this->update( $member_id, array( 'status' => 'inactive' ) );
+		$member = $this->database->get_member( $member_id );
+
+		if ( ! $member ) {
+			return new WP_Error( 'member_not_found', __( 'Member not found.', 'member-registration-plugin' ) );
+		}
+
+		$result = $this->update( $member_id, array( 'status' => 'inactive' ) );
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		// Check if this was the last active member for the user.
+		$active_count = $this->database->count_members_by_user_id( $member->user_id, 'active' );
+
+		// Return whether user should be logged out (no more active members).
+		return array(
+			'success'       => true,
+			'logout_user'   => ( 0 === $active_count ),
+			'active_count'  => $active_count,
+		);
 	}
 
 	/**
@@ -456,6 +551,23 @@ class Mbrreg_Member {
 		}
 
 		return $member;
+	}
+
+	/**
+	 * Get all members by user ID.
+	 *
+	 * @since 1.1.0
+	 * @param int $user_id WordPress user ID.
+	 * @return array Array of member objects.
+	 */
+	public function get_all_by_user_id( $user_id ) {
+		$members = $this->database->get_members_by_user_id( $user_id );
+
+		foreach ( $members as $key => $member ) {
+			$members[ $key ] = $this->enrich_member_data( $member );
+		}
+
+		return $members;
 	}
 
 	/**
@@ -545,6 +657,11 @@ class Mbrreg_Member {
 		$custom_fields = $this->custom_fields->get_all();
 
 		foreach ( $custom_fields as $field ) {
+			// Skip admin-only fields for regular users.
+			if ( $field->is_admin_only && ! current_user_can( 'mbrreg_manage_members' ) ) {
+				continue;
+			}
+
 			$field_key = 'custom_' . $field->id;
 
 			if ( $field->is_required && ( ! isset( $data[ $field_key ] ) || '' === $data[ $field_key ] ) ) {
@@ -571,14 +688,20 @@ class Mbrreg_Member {
 	 * Save custom field values.
 	 *
 	 * @since 1.0.0
-	 * @param int   $member_id Member ID.
-	 * @param array $data      Data containing custom field values.
+	 * @param int   $member_id     Member ID.
+	 * @param array $data          Data containing custom field values.
+	 * @param bool  $is_admin_edit Whether this is an admin edit.
 	 * @return void
 	 */
-	private function save_custom_field_values( $member_id, $data ) {
+	private function save_custom_field_values( $member_id, $data, $is_admin_edit = false ) {
 		$custom_fields = $this->custom_fields->get_all();
 
 		foreach ( $custom_fields as $field ) {
+			// Skip admin-only fields for regular users.
+			if ( $field->is_admin_only && ! $is_admin_edit ) {
+				continue;
+			}
+
 			$field_key = 'custom_' . $field->id;
 
 			if ( isset( $data[ $field_key ] ) ) {
@@ -610,10 +733,12 @@ class Mbrreg_Member {
 		}
 
 		// Check if user is a member admin.
-		$member = $this->get_by_user_id( $user_id );
+		$members = $this->database->get_members_by_user_id( $user_id );
 
-		if ( $member && $member->is_admin ) {
-			return true;
+		foreach ( $members as $member ) {
+			if ( $member->is_admin ) {
+				return true;
+			}
 		}
 
 		return false;
@@ -647,5 +772,182 @@ class Mbrreg_Member {
 		$this->email->send_activation_email( $member->user_id, $activation_key );
 
 		return true;
+	}
+
+	/**
+	 * Check if user can manage a specific member.
+	 *
+	 * @since 1.1.0
+	 * @param int $member_id Member ID.
+	 * @param int $user_id   User ID (optional, defaults to current user).
+	 * @return bool
+	 */
+	public function can_manage_member( $member_id, $user_id = null ) {
+		if ( null === $user_id ) {
+			$user_id = get_current_user_id();
+		}
+
+		if ( ! $user_id ) {
+			return false;
+		}
+
+		// Admins can manage all members.
+		if ( $this->is_member_admin( $user_id ) ) {
+			return true;
+		}
+
+		// Check if member belongs to user.
+		$member = $this->database->get_member( $member_id );
+
+		return $member && (int) $member->user_id === (int) $user_id;
+	}
+
+	/**
+	 * Export members to CSV.
+	 *
+	 * @since 1.1.0
+	 * @param array $args Query arguments.
+	 * @return string CSV content.
+	 */
+	public function export_csv( $args = array() ) {
+		$members       = $this->get_all( $args );
+		$custom_fields = $this->custom_fields->get_all();
+
+		// Build CSV header.
+		$headers = array(
+			'ID',
+			'Username',
+			'Email',
+			'First Name',
+			'Last Name',
+			'Address',
+			'Telephone',
+			'Date of Birth',
+			'Place of Birth',
+			'Status',
+			'Is Admin',
+			'Registered',
+		);
+
+		// Add custom field headers.
+		foreach ( $custom_fields as $field ) {
+			$headers[] = $field->field_label;
+		}
+
+		// Start CSV output.
+		$output = fopen( 'php://temp', 'r+' );
+		fputcsv( $output, $headers );
+
+		// Add member rows.
+		foreach ( $members as $member ) {
+			$row = array(
+				$member->id,
+				$member->username,
+				$member->email,
+				$member->first_name,
+				$member->last_name,
+				$member->address,
+				$member->telephone,
+				$member->date_of_birth,
+				$member->place_of_birth,
+				$member->status,
+				$member->is_admin ? 'Yes' : 'No',
+				$member->created_at,
+			);
+
+			// Add custom field values.
+			foreach ( $custom_fields as $field ) {
+				$row[] = isset( $member->custom_fields[ $field->id ] ) ? $member->custom_fields[ $field->id ] : '';
+			}
+
+			fputcsv( $output, $row );
+		}
+
+		rewind( $output );
+		$csv = stream_get_contents( $output );
+		fclose( $output );
+
+		return $csv;
+	}
+
+	/**
+	 * Import members from CSV data.
+	 *
+	 * @since 1.1.0
+	 * @param array $csv_data Parsed CSV data.
+	 * @return array Import results.
+	 */
+	public function import_csv( $csv_data ) {
+		$results = array(
+			'success' => 0,
+			'errors'  => array(),
+			'skipped' => 0,
+		);
+
+		foreach ( $csv_data as $row_num => $row ) {
+			// Skip header row.
+			if ( 0 === $row_num ) {
+				continue;
+			}
+
+			$data = $this->parse_csv_row( $row );
+
+			if ( empty( $data['email'] ) ) {
+				$results['errors'][] = sprintf(
+					/* translators: %d: Row number */
+					__( 'Row %d: Email is required.', 'member-registration-plugin' ),
+					$row_num + 1
+				);
+				continue;
+			}
+
+			$result = $this->register( $data, true );
+
+			if ( is_wp_error( $result ) ) {
+				$results['errors'][] = sprintf(
+					/* translators: 1: Row number, 2: Error message */
+					__( 'Row %1$d: %2$s', 'member-registration-plugin' ),
+					$row_num + 1,
+					$result->get_error_message()
+				);
+			} else {
+				++$results['success'];
+			}
+		}
+
+		return $results;
+	}
+
+	/**
+	 * Parse CSV row into member data.
+	 *
+	 * @since 1.1.0
+	 * @param array $row CSV row.
+	 * @return array Member data.
+	 */
+	private function parse_csv_row( $row ) {
+		// Expected column order: Email, First Name, Last Name, Address, Telephone, Date of Birth, Place of Birth.
+		$data = array(
+			'email'          => isset( $row[0] ) ? trim( $row[0] ) : '',
+			'first_name'     => isset( $row[1] ) ? trim( $row[1] ) : '',
+			'last_name'      => isset( $row[2] ) ? trim( $row[2] ) : '',
+			'address'        => isset( $row[3] ) ? trim( $row[3] ) : '',
+			'telephone'      => isset( $row[4] ) ? trim( $row[4] ) : '',
+			'date_of_birth'  => isset( $row[5] ) ? trim( $row[5] ) : '',
+			'place_of_birth' => isset( $row[6] ) ? trim( $row[6] ) : '',
+		);
+
+		// Parse additional custom fields if present.
+		$custom_fields = $this->custom_fields->get_all();
+		$col_index     = 7;
+
+		foreach ( $custom_fields as $field ) {
+			if ( isset( $row[ $col_index ] ) ) {
+				$data[ 'custom_' . $field->id ] = trim( $row[ $col_index ] );
+			}
+			++$col_index;
+		}
+
+		return $data;
 	}
 }

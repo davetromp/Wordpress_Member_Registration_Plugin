@@ -1,0 +1,765 @@
+# Dutch translation for Member Registration Plugin.
+# Copyright (C) 2024
+# This file is distributed under the same license as the plugin.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Member Registration Plugin 1.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 12:00+0000\n"
+"PO-Revision-Date: 2026-01-10 11:45+0100\n"
+"Last-Translator: \n"
+"Language-Team: Dutch\n"
+"Language: nl_NL\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.2.2\n"
+
+# Plugin Name
+msgid "Member Registration Plugin"
+msgstr "Leden Registratie Plugin"
+
+# General
+msgid "Members"
+msgstr "Leden"
+
+msgid "All Members"
+msgstr "Alle Leden"
+
+msgid "Member Registration"
+msgstr "Ledenregistratie"
+
+msgid "My Memberships"
+msgstr "Mijn Lidmaatschappen"
+
+msgid "Settings"
+msgstr "Instellingen"
+
+msgid "Custom Fields"
+msgstr "Aangepaste Velden"
+
+msgid "Import / Export"
+msgstr "Importeren / Exporteren"
+
+# Login Form
+msgid "Login"
+msgstr "Inloggen"
+
+msgid "Username or Email"
+msgstr "Gebruikersnaam of E-mail"
+
+msgid "Password"
+msgstr "Wachtwoord"
+
+msgid "Remember Me"
+msgstr "Onthoud mij"
+
+msgid "Log In"
+msgstr "Inloggen"
+
+msgid "Forgot your password?"
+msgstr "Wachtwoord vergeten?"
+
+msgid "Login successful!"
+msgstr "Succesvol ingelogd!"
+
+msgid "Invalid username or password."
+msgstr "Ongeldige gebruikersnaam of wachtwoord."
+
+msgid "Please enter your username and password."
+msgstr "Vul uw gebruikersnaam en wachtwoord in."
+
+# Registration Form
+msgid "Register"
+msgstr "Registreren"
+
+msgid "Account Details"
+msgstr "Accountgegevens"
+
+msgid "Email Address"
+msgstr "E-mailadres"
+
+msgid "Username"
+msgstr "Gebruikersnaam"
+
+msgid "Leave blank to auto-generate from email."
+msgstr "Laat leeg om automatisch te genereren op basis van e-mail."
+
+msgid "Confirm Password"
+msgstr "Bevestig Wachtwoord"
+
+msgid "Personal Details"
+msgstr "Persoonlijke Gegevens"
+
+msgid "First Name"
+msgstr "Voornaam"
+
+msgid "Last Name"
+msgstr "Achternaam"
+
+msgid "Address"
+msgstr "Adres"
+
+msgid "Telephone Number"
+msgstr "Telefoonnummer"
+
+msgid "Date of Birth"
+msgstr "Geboortedatum"
+
+msgid "Place of Birth"
+msgstr "Geboorteplaats"
+
+msgid "Additional Information"
+msgstr "Aanvullende Informatie"
+
+msgid ""
+"Registration successful! Please check your email to activate your account."
+msgstr ""
+"Registratie succesvol! Controleer uw e-mail om uw account te activeren."
+
+msgid "Registration is currently disabled."
+msgstr "Registratie is momenteel uitgeschakeld."
+
+msgid "This email address is already registered."
+msgstr "Dit e-mailadres is al geregistreerd."
+
+msgid "Email address is required."
+msgstr "E-mailadres is verplicht."
+
+msgid "Please enter a valid email address."
+msgstr "Voer een geldig e-mailadres in."
+
+msgid "Passwords do not match."
+msgstr "Wachtwoorden komen niet overeen."
+
+# Dashboard
+msgid "Welcome, %s!"
+msgstr "Welkom, %s!"
+
+msgid "Log Out"
+msgstr "Uitloggen"
+
+msgid "Manage Members"
+msgstr "Leden Beheren"
+
+msgid "Account Email:"
+msgstr "Account E-mail:"
+
+msgid "Registered Members:"
+msgstr "Geregistreerde Leden:"
+
+msgid "Member #%d"
+msgstr "Lid #%d"
+
+msgid "Update Profile"
+msgstr "Profiel Bijwerken"
+
+msgid "Deactivate Membership"
+msgstr "Lidmaatschap Deactiveren"
+
+msgid "Profile updated successfully!"
+msgstr "Profiel succesvol bijgewerkt!"
+
+msgid "+ Add Another Member"
+msgstr "+ Nog een Lid Toevoegen"
+
+msgid "Add New Member"
+msgstr "Nieuw Lid Toevoegen"
+
+msgid "Add another family member to your account."
+msgstr "Voeg nog een familielid toe aan uw account."
+
+msgid "Add Member"
+msgstr "Lid Toevoegen"
+
+msgid "Cancel"
+msgstr "Annuleren"
+
+msgid ""
+"Member added successfully! Please check your email to activate the "
+"membership."
+msgstr ""
+"Lid succesvol toegevoegd! Controleer uw e-mail om het lidmaatschap te "
+"activeren."
+
+msgid "Adding multiple members is not allowed."
+msgstr "Het toevoegen van meerdere leden is niet toegestaan."
+
+# Status
+msgid "Pending Activation"
+msgstr "Wacht op Activatie"
+
+msgid "Active"
+msgstr "Actief"
+
+msgid "Inactive"
+msgstr "Inactief"
+
+msgid "Status"
+msgstr "Status"
+
+# Confirmation Messages
+msgid "Confirm Action"
+msgstr "Actie Bevestigen"
+
+msgid ""
+"Are you sure you want to deactivate this membership? If this is your only "
+"active membership, you will be logged out."
+msgstr ""
+"Weet u zeker dat u dit lidmaatschap wilt deactiveren? Als dit uw enige "
+"actieve lidmaatschap is, wordt u uitgelogd."
+
+msgid "Are you sure you want to log out?"
+msgstr "Weet u zeker dat u wilt uitloggen?"
+
+msgid "Membership has been set to inactive."
+msgstr "Lidmaatschap is ingesteld op inactief."
+
+msgid "You have been logged out."
+msgstr "U bent uitgelogd."
+
+msgid "Confirm"
+msgstr "Bevestigen"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "Notice"
+msgstr "Melding"
+
+msgid "Error"
+msgstr "Fout"
+
+msgid "Success"
+msgstr "Succes"
+
+# Admin - Members List
+msgid "All"
+msgstr "Alle"
+
+msgid "Pending"
+msgstr "In Afwachting"
+
+msgid "Search Members"
+msgstr "Leden Zoeken"
+
+msgid "Search members..."
+msgstr "Leden zoeken..."
+
+msgid "Search"
+msgstr "Zoeken"
+
+msgid "Bulk Actions"
+msgstr "Bulkacties"
+
+msgid "Activate"
+msgstr "Activeren"
+
+msgid "Deactivate"
+msgstr "Deactiveren"
+
+msgid "Delete Members"
+msgstr "Leden Verwijderen"
+
+msgid "Delete Members + Users"
+msgstr "Leden + Gebruikers Verwijderen"
+
+msgid "Apply"
+msgstr "Toepassen"
+
+msgid "Name"
+msgstr "Naam"
+
+msgid "Email"
+msgstr "E-mail"
+
+msgid "Account Owner"
+msgstr "Accounteigenaar"
+
+msgid "Admin"
+msgstr "Beheerder"
+
+msgid "Registered"
+msgstr "Geregistreerd"
+
+msgid "Edit"
+msgstr "Bewerken"
+
+msgid "Delete"
+msgstr "Verwijderen"
+
+msgid "Resend Activation"
+msgstr "Activatie Opnieuw Versturen"
+
+msgid "No members found."
+msgstr "Geen leden gevonden."
+
+msgid "%s member"
+msgid_plural "%s members"
+msgstr[0] "%s lid"
+msgstr[1] "%s leden"
+
+# Admin - Edit Member
+msgid "Edit Member"
+msgstr "Lid Bewerken"
+
+msgid "Back to Members"
+msgstr "Terug naar Leden"
+
+msgid "Personal Information"
+msgstr "Persoonlijke Informatie"
+
+msgid "Member Status"
+msgstr "Lidstatus"
+
+msgid "Member Admin"
+msgstr "Lid Beheerder"
+
+msgid "Can manage members"
+msgstr "Kan leden beheren"
+
+msgid "Member admins can view and manage other members from the frontend."
+msgstr ""
+"Ledenadministrateurs kunnen andere leden bekijken en beheren vanuit de "
+"frontend."
+
+msgid "Account Information"
+msgstr "Accountinformatie"
+
+msgid "Member ID"
+msgstr "Lid ID"
+
+msgid "WP User ID"
+msgstr "WP Gebruiker ID"
+
+msgid "Last Updated"
+msgstr "Laatst Bijgewerkt"
+
+msgid "Actions"
+msgstr "Acties"
+
+msgid "Update Member"
+msgstr "Lid Bijwerken"
+
+msgid "Delete Member"
+msgstr "Lid Verwijderen"
+
+msgid "Resend Activation Email"
+msgstr "Activatie E-mail Opnieuw Versturen"
+
+msgid "Member updated successfully!"
+msgstr "Lid succesvol bijgewerkt!"
+
+msgid "Member deleted successfully!"
+msgstr "Lid succesvol verwijderd!"
+
+msgid "Member not found."
+msgstr "Lid niet gevonden."
+
+msgid "This user account (%2$s) has %1$d registered members."
+msgstr "Dit gebruikersaccount (%2$s) heeft %1$d geregistreerde leden."
+
+# Admin - Custom Fields
+msgid "Existing Fields"
+msgstr "Bestaande Velden"
+
+msgid "Order"
+msgstr "Volgorde"
+
+msgid "Label"
+msgstr "Label"
+
+msgid "Type"
+msgstr "Type"
+
+msgid "Required"
+msgstr "Verplicht"
+
+msgid "Admin Only"
+msgstr "Alleen Beheerder"
+
+msgid "Admin only - users cannot edit"
+msgstr "Alleen beheerder - gebruikers kunnen niet bewerken"
+
+msgid "Editable by users"
+msgstr "Bewerkbaar door gebruikers"
+
+msgid "No custom fields have been created yet."
+msgstr "Er zijn nog geen aangepaste velden aangemaakt."
+
+msgid "Add New Field"
+msgstr "Nieuw Veld Toevoegen"
+
+msgid "Field Name"
+msgstr "Veldnaam"
+
+msgid "Unique identifier. Lowercase letters, numbers, and underscores only."
+msgstr "Unieke identificatie. Alleen kleine letters, cijfers en underscores."
+
+msgid "Field Label"
+msgstr "Veldlabel"
+
+msgid "The label displayed to users."
+msgstr "Het label dat aan gebruikers wordt getoond."
+
+msgid "Field Type"
+msgstr "Veldtype"
+
+msgid "Text"
+msgstr "Tekst"
+
+msgid "Textarea"
+msgstr "Tekstvak"
+
+msgid "Number"
+msgstr "Nummer"
+
+msgid "Date"
+msgstr "Datum"
+
+msgid "Dropdown"
+msgstr "Keuzelijst"
+
+msgid "Checkbox"
+msgstr "Selectievakje"
+
+msgid "Radio Buttons"
+msgstr "Keuzerondjes"
+
+msgid "Options"
+msgstr "Opties"
+
+msgid "Enter one option per line."
+msgstr "Voer één optie per regel in."
+
+msgid "Display Order"
+msgstr "Weergavevolgorde"
+
+msgid "Lower numbers display first."
+msgstr "Lagere nummers worden eerst weergegeven."
+
+msgid "Required field"
+msgstr "Verplicht veld"
+
+msgid "Admin only (users cannot edit)"
+msgstr "Alleen beheerder (gebruikers kunnen niet bewerken)"
+
+msgid ""
+"If checked, only administrators can view and edit this field. Users will see "
+"the value but cannot change it."
+msgstr ""
+"Indien aangevinkt, kunnen alleen beheerders dit veld bekijken en bewerken. "
+"Gebruikers zien de waarde maar kunnen deze niet wijzigen."
+
+msgid "Add Field"
+msgstr "Veld Toevoegen"
+
+msgid "Edit Custom Field"
+msgstr "Aangepast Veld Bewerken"
+
+msgid "Update Field"
+msgstr "Veld Bijwerken"
+
+msgid "Custom field created successfully!"
+msgstr "Aangepast veld succesvol aangemaakt!"
+
+msgid "Custom field updated successfully!"
+msgstr "Aangepast veld succesvol bijgewerkt!"
+
+msgid "Custom field deleted successfully!"
+msgstr "Aangepast veld succesvol verwijderd!"
+
+msgid "Field name is required."
+msgstr "Veldnaam is verplicht."
+
+msgid "Field label is required."
+msgstr "Veldlabel is verplicht."
+
+msgid "This field name is reserved."
+msgstr "Deze veldnaam is gereserveerd."
+
+msgid "(View only)"
+msgstr "(Alleen bekijken)"
+
+msgid "This field can only be edited by administrators."
+msgstr "Dit veld kan alleen worden bewerkt door beheerders."
+
+# Admin - Import/Export
+msgid "Import Members"
+msgstr "Leden Importeren"
+
+msgid ""
+"Import members from a CSV file. An activation email will be sent to each "
+"imported member."
+msgstr ""
+"Importeer leden vanuit een CSV-bestand. Aan elk geïmporteerd lid wordt een "
+"activatie-e-mail gestuurd."
+
+msgid "CSV File Format"
+msgstr "CSV-bestandsformaat"
+
+msgid "Your CSV file should have the following columns in order:"
+msgstr "Uw CSV-bestand moet de volgende kolommen in volgorde bevatten:"
+
+msgid "required"
+msgstr "verplicht"
+
+msgid "format: YYYY-MM-DD"
+msgstr "formaat: JJJJ-MM-DD"
+
+msgid "Note:"
+msgstr "Opmerking:"
+
+msgid ""
+"The first row should contain column headers and will be skipped during "
+"import."
+msgstr ""
+"De eerste rij moet kolomkoppen bevatten en wordt overgeslagen tijdens het "
+"importeren."
+
+msgid "CSV File"
+msgstr "CSV-bestand"
+
+msgid "Select a CSV file to import."
+msgstr "Selecteer een CSV-bestand om te importeren."
+
+msgid "Import Results"
+msgstr "Importresultaten"
+
+msgid "Download Sample CSV"
+msgstr "Voorbeeld CSV Downloaden"
+
+msgid "Download a sample CSV file with the correct format:"
+msgstr "Download een voorbeeld CSV-bestand met het juiste formaat:"
+
+msgid "Export Members"
+msgstr "Leden Exporteren"
+
+msgid "Export members to a CSV file for backup or external use."
+msgstr "Exporteer leden naar een CSV-bestand voor backup of extern gebruik."
+
+msgid "Active Only"
+msgstr "Alleen Actief"
+
+msgid "Inactive Only"
+msgstr "Alleen Inactief"
+
+msgid "Pending Only"
+msgstr "Alleen In Afwachting"
+
+msgid "Export Information"
+msgstr "Export Informatie"
+
+msgid "The exported CSV will include:"
+msgstr "Het geëxporteerde CSV-bestand bevat:"
+
+msgid "Member ID, Username, Email"
+msgstr "Lid ID, Gebruikersnaam, E-mail"
+
+msgid "First Name, Last Name, Address, Telephone"
+msgstr "Voornaam, Achternaam, Adres, Telefoonnummer"
+
+msgid "Date of Birth, Place of Birth"
+msgstr "Geboortedatum, Geboorteplaats"
+
+msgid "Status, Admin Status, Registration Date"
+msgstr "Status, Beheerdersstatus, Registratiedatum"
+
+msgid "All custom field values"
+msgstr "Alle aangepaste veldwaarden"
+
+msgid "Import completed. %1$d members imported successfully, %2$d errors."
+msgstr "Import voltooid. %1$d leden succesvol geïmporteerd, %2$d fouten."
+
+msgid "Row %d: Email is required."
+msgstr "Rij %d: E-mail is verplicht."
+
+msgid "Row %1$d: %2$s"
+msgstr "Rij %1$d: %2$s"
+
+msgid "Errors:"
+msgstr "Fouten:"
+
+msgid "...and %d more errors."
+msgstr "...en nog %d fouten."
+
+msgid "Please select a CSV file to upload."
+msgstr "Selecteer een CSV-bestand om te uploaden."
+
+msgid "Invalid file type. Please upload a CSV file."
+msgstr "Ongeldig bestandstype. Upload een CSV-bestand."
+
+msgid "Failed to read the CSV file."
+msgstr "Kan het CSV-bestand niet lezen."
+
+msgid "The CSV file is empty or contains only headers."
+msgstr "Het CSV-bestand is leeg of bevat alleen kopteksten."
+
+# Admin - Settings
+msgid "Member Registration Settings"
+msgstr "Ledenregistratie Instellingen"
+
+msgid "Registration Settings"
+msgstr "Registratie Instellingen"
+
+msgid "Allow Registration"
+msgstr "Registratie Toestaan"
+
+msgid "Allow new members to register"
+msgstr "Nieuwe leden toestaan om te registreren"
+
+msgid "When disabled, the registration form will not be shown."
+msgstr "Wanneer uitgeschakeld, wordt het registratieformulier niet getoond."
+
+msgid "Allow Multiple Members"
+msgstr "Meerdere Leden Toestaan"
+
+msgid "Allow users to register multiple members under one account"
+msgstr "Gebruikers toestaan om meerdere leden te registreren onder één account"
+
+msgid "Useful for parents registering multiple children or family members."
+msgstr "Handig voor ouders die meerdere kinderen of familieleden registreren."
+
+msgid "Member Area Page"
+msgstr "Ledengebied Pagina"
+
+msgid "— Select —"
+msgstr "— Selecteer —"
+
+msgid "The page containing the [mbrreg_member_area] shortcode."
+msgstr "De pagina met de [mbrreg_member_area] shortcode."
+
+msgid "Login Redirect Page"
+msgstr "Doorstuurpagina Na Inloggen"
+
+msgid "Where to redirect members after successful login."
+msgstr "Waarheen leden worden doorgestuurd na succesvol inloggen."
+
+msgid "Required Fields"
+msgstr "Verplichte Velden"
+
+msgid ""
+"Select which fields should be required during registration and profile "
+"updates."
+msgstr ""
+"Selecteer welke velden verplicht moeten zijn tijdens registratie en "
+"profielupdates."
+
+msgid "Email Settings"
+msgstr "E-mail Instellingen"
+
+msgid "From Name"
+msgstr "Van Naam"
+
+msgid "The name that will appear in the \"From\" field of emails."
+msgstr "De naam die verschijnt in het \"Van\" veld van e-mails."
+
+msgid "From Email"
+msgstr "Van E-mail"
+
+msgid "The email address that will appear in the \"From\" field."
+msgstr "Het e-mailadres dat verschijnt in het \"Van\" veld."
+
+msgid "Shortcodes"
+msgstr "Shortcodes"
+
+msgid "Complete member area with login, registration, and dashboard."
+msgstr "Volledig ledengebied met inloggen, registratie en dashboard."
+
+msgid "Standalone login form."
+msgstr "Zelfstandig inlogformulier."
+
+msgid "Standalone registration form."
+msgstr "Zelfstandig registratieformulier."
+
+msgid "Member dashboard (for logged-in members only)."
+msgstr "Ledendashboard (alleen voor ingelogde leden)."
+
+# Emails
+msgid "Activate your membership at %s"
+msgstr "Activeer uw lidmaatschap bij %s"
+
+msgid "You have been registered as a member at %s"
+msgstr "U bent geregistreerd als lid bij %s"
+
+msgid "Welcome to %s!"
+msgstr "Welkom bij %s!"
+
+msgid "New member registration at %s"
+msgstr "Nieuwe ledenregistratie bij %s"
+
+# Misc
+msgid "Processing..."
+msgstr "Bezig met verwerken..."
+
+msgid "An error occurred. Please try again."
+msgstr "Er is een fout opgetreden. Probeer het opnieuw."
+
+msgid "Security check failed."
+msgstr "Beveiligingscontrole mislukt."
+
+msgid "You must be logged in."
+msgstr "U moet ingelogd zijn."
+
+msgid "Invalid member ID."
+msgstr "Ongeldig lid ID."
+
+msgid "You do not have permission to perform this action."
+msgstr "U heeft geen toestemming om deze actie uit te voeren."
+
+msgid "You do not have permission to update this member."
+msgstr "U heeft geen toestemming om dit lid bij te werken."
+
+msgid ""
+"Please activate your account first. Check your email for the activation link."
+msgstr "Activeer eerst uw account. Controleer uw e-mail voor de activatielink."
+
+msgid "All your memberships are inactive. Please contact the administrator."
+msgstr "Al uw lidmaatschappen zijn inactief. Neem contact op met de beheerder."
+
+msgid "Your account has been activated! You can now log in."
+msgstr "Uw account is geactiveerd! U kunt nu inloggen."
+
+msgid "Invalid activation key."
+msgstr "Ongeldige activatiesleutel."
+
+msgid "This account is already activated."
+msgstr "Dit account is al geactiveerd."
+
+msgid "Activation key is required."
+msgstr "Activatiesleutel is verplicht."
+
+msgid "You are already logged in."
+msgstr "U bent al ingelogd."
+
+msgid "You are already registered and logged in."
+msgstr "U bent al geregistreerd en ingelogd."
+
+msgid "Please log in to view your dashboard."
+msgstr "Log in om uw dashboard te bekijken."
+
+msgid "No member profile found. Please contact an administrator."
+msgstr "Geen lidprofiel gevonden. Neem contact op met een beheerder."
+
+msgid "%s is required."
+msgstr "%s is verplicht."
+
+msgid "Please enter a valid date of birth."
+msgstr "Voer een geldige geboortedatum in."
+
+msgid "Activation email sent successfully!"
+msgstr "Activatie-e-mail succesvol verzonden!"
+
+msgid "-- Select --"
+msgstr "-- Selecteer --"
+
+msgid "Bulk action completed. %1$d successful, %2$d failed."
+msgstr "Bulkactie voltooid. %1$d succesvol, %2$d mislukt."
+
+msgid "Please select at least one member."
+msgstr "Selecteer ten minste één lid."
+
+msgid "Please select an action."
+msgstr "Selecteer een actie."
