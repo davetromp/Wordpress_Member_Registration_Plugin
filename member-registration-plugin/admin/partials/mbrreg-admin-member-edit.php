@@ -14,9 +14,10 @@ if ( ! defined( 'WPINC' ) ) {
 
 // Get custom fields handler for rendering.
 $custom_fields_handler = new Mbrreg_Custom_Fields();
+$statuses              = Mbrreg_Member::get_statuses();
 
 // Count other members in this account.
-$database      = new Mbrreg_Database();
+$database        = new Mbrreg_Database();
 $account_members = $database->get_members_by_user_id( $member->user_id );
 ?>
 
@@ -80,38 +81,6 @@ $account_members = $database->get_members_by_user_id( $member->user_id );
 								<p class="description"><?php esc_html_e( 'Changing this will update the WordPress user email for the account owner.', 'member-registration-plugin' ); ?></p>
 							</td>
 						</tr>
-						<tr>
-							<th scope="row">
-								<label for="address"><?php esc_html_e( 'Address', 'member-registration-plugin' ); ?></label>
-							</th>
-							<td>
-								<textarea name="address" id="address" rows="3" class="large-text"><?php echo esc_textarea( $member->address ); ?></textarea>
-							</td>
-						</tr>
-						<tr>
-							<th scope="row">
-								<label for="telephone"><?php esc_html_e( 'Telephone', 'member-registration-plugin' ); ?></label>
-							</th>
-							<td>
-								<input type="text" name="telephone" id="telephone" value="<?php echo esc_attr( $member->telephone ); ?>" class="regular-text">
-							</td>
-						</tr>
-						<tr>
-							<th scope="row">
-								<label for="date_of_birth"><?php esc_html_e( 'Date of Birth', 'member-registration-plugin' ); ?></label>
-							</th>
-							<td>
-								<input type="date" name="date_of_birth" id="date_of_birth" value="<?php echo esc_attr( $member->date_of_birth ); ?>">
-							</td>
-						</tr>
-						<tr>
-							<th scope="row">
-								<label for="place_of_birth"><?php esc_html_e( 'Place of Birth', 'member-registration-plugin' ); ?></label>
-							</th>
-							<td>
-								<input type="text" name="place_of_birth" id="place_of_birth" value="<?php echo esc_attr( $member->place_of_birth ); ?>" class="regular-text">
-							</td>
-						</tr>
 					</table>
 				</div>
 
@@ -162,7 +131,7 @@ $account_members = $database->get_members_by_user_id( $member->user_id );
 							</th>
 							<td>
 								<select name="status" id="status">
-									<?php foreach ( Mbrreg_Member::$statuses as $value => $label ) : ?>
+									<?php foreach ( $statuses as $value => $label ) : ?>
 										<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $member->status, $value ); ?>>
 											<?php echo esc_html( $label ); ?>
 										</option>
@@ -204,11 +173,11 @@ $account_members = $database->get_members_by_user_id( $member->user_id );
 						</tr>
 						<tr>
 							<th scope="row"><?php esc_html_e( 'Registered', 'member-registration-plugin' ); ?></th>
-							<td><?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $member->created_at ) ) ); ?></td>
+							<td><?php echo esc_html( mbrreg_format_date( $member->created_at, get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) ); ?></td>
 						</tr>
 						<tr>
 							<th scope="row"><?php esc_html_e( 'Last Updated', 'member-registration-plugin' ); ?></th>
-							<td><?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $member->updated_at ) ) ); ?></td>
+							<td><?php echo esc_html( mbrreg_format_date( $member->updated_at, get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) ); ?></td>
 						</tr>
 					</table>
 				</div>

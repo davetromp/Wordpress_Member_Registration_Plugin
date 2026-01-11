@@ -83,10 +83,33 @@ $pages = get_pages();
 			</table>
 		</div>
 
+		<!-- Display Settings -->
+		<div class="mbrreg-settings-section">
+			<h2><?php esc_html_e( 'Display Settings', 'member-registration-plugin' ); ?></h2>
+			<table class="form-table">
+				<tr>
+					<th scope="row">
+						<label for="mbrreg_date_format"><?php esc_html_e( 'Date Format', 'member-registration-plugin' ); ?></label>
+					</th>
+					<td>
+						<select name="mbrreg_date_format" id="mbrreg_date_format">
+							<option value="eu" <?php selected( get_option( 'mbrreg_date_format', 'eu' ), 'eu' ); ?>>
+								<?php esc_html_e( 'European (DD/MM/YYYY)', 'member-registration-plugin' ); ?>
+							</option>
+							<option value="us" <?php selected( get_option( 'mbrreg_date_format', 'eu' ), 'us' ); ?>>
+								<?php esc_html_e( 'US (MM/DD/YYYY)', 'member-registration-plugin' ); ?>
+							</option>
+						</select>
+						<p class="description"><?php esc_html_e( 'Choose how dates are displayed throughout the plugin.', 'member-registration-plugin' ); ?></p>
+					</td>
+				</tr>
+			</table>
+		</div>
+
 		<!-- Required Fields -->
 		<div class="mbrreg-settings-section">
 			<h2><?php esc_html_e( 'Required Fields', 'member-registration-plugin' ); ?></h2>
-			<p class="description"><?php esc_html_e( 'Select which fields should be required during registration and profile updates.', 'member-registration-plugin' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Select which default fields should be required during registration and profile updates. Additional fields can be configured in the Custom Fields section.', 'member-registration-plugin' ); ?></p>
 			<table class="form-table">
 				<tr>
 					<th scope="row"><?php esc_html_e( 'First Name', 'member-registration-plugin' ); ?></th>
@@ -102,42 +125,6 @@ $pages = get_pages();
 					<td>
 						<label>
 							<input type="checkbox" name="mbrreg_require_last_name" value="1" <?php checked( get_option( 'mbrreg_require_last_name', false ) ); ?>>
-							<?php esc_html_e( 'Required', 'member-registration-plugin' ); ?>
-						</label>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><?php esc_html_e( 'Address', 'member-registration-plugin' ); ?></th>
-					<td>
-						<label>
-							<input type="checkbox" name="mbrreg_require_address" value="1" <?php checked( get_option( 'mbrreg_require_address', false ) ); ?>>
-							<?php esc_html_e( 'Required', 'member-registration-plugin' ); ?>
-						</label>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><?php esc_html_e( 'Telephone', 'member-registration-plugin' ); ?></th>
-					<td>
-						<label>
-							<input type="checkbox" name="mbrreg_require_telephone" value="1" <?php checked( get_option( 'mbrreg_require_telephone', false ) ); ?>>
-							<?php esc_html_e( 'Required', 'member-registration-plugin' ); ?>
-						</label>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><?php esc_html_e( 'Date of Birth', 'member-registration-plugin' ); ?></th>
-					<td>
-						<label>
-							<input type="checkbox" name="mbrreg_require_date_of_birth" value="1" <?php checked( get_option( 'mbrreg_require_date_of_birth', false ) ); ?>>
-							<?php esc_html_e( 'Required', 'member-registration-plugin' ); ?>
-						</label>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><?php esc_html_e( 'Place of Birth', 'member-registration-plugin' ); ?></th>
-					<td>
-						<label>
-							<input type="checkbox" name="mbrreg_require_place_of_birth" value="1" <?php checked( get_option( 'mbrreg_require_place_of_birth', false ) ); ?>>
 							<?php esc_html_e( 'Required', 'member-registration-plugin' ); ?>
 						</label>
 					</td>

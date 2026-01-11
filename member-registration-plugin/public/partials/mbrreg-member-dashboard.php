@@ -14,6 +14,7 @@ if ( ! defined( 'WPINC' ) ) {
 
 // Get custom fields instance for rendering.
 $custom_fields_handler = new Mbrreg_Custom_Fields();
+$statuses              = Mbrreg_Member::get_statuses();
 ?>
 
 <div class="mbrreg-dashboard-container">
@@ -72,14 +73,14 @@ $custom_fields_handler = new Mbrreg_Custom_Fields();
 						?>
 					</h3>
 					<span class="mbrreg-status mbrreg-status-<?php echo esc_attr( $member->status ); ?>">
-						<?php echo esc_html( Mbrreg_Member::$statuses[ $member->status ] ); ?>
+						<?php echo esc_html( $statuses[ $member->status ] ); ?>
 					</span>
 				</div>
 
 				<form class="mbrreg-profile-form mbrreg-form" method="post" data-member-id="<?php echo esc_attr( $member->id ); ?>">
 					<input type="hidden" name="member_id" value="<?php echo esc_attr( $member->id ); ?>">
 
-					<!-- Personal Details -->
+					<!-- Personal Details (only first_name and last_name) -->
 					<fieldset class="mbrreg-fieldset">
 						<legend><?php esc_html_e( 'Personal Details', 'member-registration-plugin' ); ?></legend>
 
@@ -101,46 +102,6 @@ $custom_fields_handler = new Mbrreg_Custom_Fields();
 								<?php endif; ?>
 							</label>
 							<input type="text" id="mbrreg-last-name-<?php echo esc_attr( $member->id ); ?>" name="last_name" value="<?php echo esc_attr( $member->last_name ); ?>" <?php echo get_option( 'mbrreg_require_last_name', false ) ? 'required' : ''; ?>>
-						</div>
-
-						<div class="mbrreg-form-row">
-							<label for="mbrreg-address-<?php echo esc_attr( $member->id ); ?>">
-								<?php esc_html_e( 'Address', 'member-registration-plugin' ); ?>
-								<?php if ( get_option( 'mbrreg_require_address', false ) ) : ?>
-									<span class="required">*</span>
-								<?php endif; ?>
-							</label>
-							<textarea id="mbrreg-address-<?php echo esc_attr( $member->id ); ?>" name="address" rows="3" <?php echo get_option( 'mbrreg_require_address', false ) ? 'required' : ''; ?>><?php echo esc_textarea( $member->address ); ?></textarea>
-						</div>
-
-						<div class="mbrreg-form-row">
-							<label for="mbrreg-telephone-<?php echo esc_attr( $member->id ); ?>">
-								<?php esc_html_e( 'Telephone Number', 'member-registration-plugin' ); ?>
-								<?php if ( get_option( 'mbrreg_require_telephone', false ) ) : ?>
-									<span class="required">*</span>
-								<?php endif; ?>
-							</label>
-							<input type="tel" id="mbrreg-telephone-<?php echo esc_attr( $member->id ); ?>" name="telephone" value="<?php echo esc_attr( $member->telephone ); ?>" <?php echo get_option( 'mbrreg_require_telephone', false ) ? 'required' : ''; ?>>
-						</div>
-
-						<div class="mbrreg-form-row">
-							<label for="mbrreg-dob-<?php echo esc_attr( $member->id ); ?>">
-								<?php esc_html_e( 'Date of Birth', 'member-registration-plugin' ); ?>
-								<?php if ( get_option( 'mbrreg_require_date_of_birth', false ) ) : ?>
-									<span class="required">*</span>
-								<?php endif; ?>
-							</label>
-							<input type="date" id="mbrreg-dob-<?php echo esc_attr( $member->id ); ?>" name="date_of_birth" value="<?php echo esc_attr( $member->date_of_birth ); ?>" <?php echo get_option( 'mbrreg_require_date_of_birth', false ) ? 'required' : ''; ?>>
-						</div>
-
-						<div class="mbrreg-form-row">
-							<label for="mbrreg-pob-<?php echo esc_attr( $member->id ); ?>">
-								<?php esc_html_e( 'Place of Birth', 'member-registration-plugin' ); ?>
-								<?php if ( get_option( 'mbrreg_require_place_of_birth', false ) ) : ?>
-									<span class="required">*</span>
-								<?php endif; ?>
-							</label>
-							<input type="text" id="mbrreg-pob-<?php echo esc_attr( $member->id ); ?>" name="place_of_birth" value="<?php echo esc_attr( $member->place_of_birth ); ?>" <?php echo get_option( 'mbrreg_require_place_of_birth', false ) ? 'required' : ''; ?>>
 						</div>
 					</fieldset>
 
@@ -227,46 +188,6 @@ $custom_fields_handler = new Mbrreg_Custom_Fields();
 									<?php endif; ?>
 								</label>
 								<input type="text" id="mbrreg-add-last-name" name="last_name" <?php echo get_option( 'mbrreg_require_last_name', false ) ? 'required' : ''; ?>>
-							</div>
-
-							<div class="mbrreg-form-row">
-								<label for="mbrreg-add-address">
-									<?php esc_html_e( 'Address', 'member-registration-plugin' ); ?>
-									<?php if ( get_option( 'mbrreg_require_address', false ) ) : ?>
-										<span class="required">*</span>
-									<?php endif; ?>
-								</label>
-								<textarea id="mbrreg-add-address" name="address" rows="3" <?php echo get_option( 'mbrreg_require_address', false ) ? 'required' : ''; ?>></textarea>
-							</div>
-
-							<div class="mbrreg-form-row">
-								<label for="mbrreg-add-telephone">
-									<?php esc_html_e( 'Telephone Number', 'member-registration-plugin' ); ?>
-									<?php if ( get_option( 'mbrreg_require_telephone', false ) ) : ?>
-										<span class="required">*</span>
-									<?php endif; ?>
-								</label>
-								<input type="tel" id="mbrreg-add-telephone" name="telephone" <?php echo get_option( 'mbrreg_require_telephone', false ) ? 'required' : ''; ?>>
-							</div>
-
-							<div class="mbrreg-form-row">
-								<label for="mbrreg-add-dob">
-									<?php esc_html_e( 'Date of Birth', 'member-registration-plugin' ); ?>
-									<?php if ( get_option( 'mbrreg_require_date_of_birth', false ) ) : ?>
-										<span class="required">*</span>
-									<?php endif; ?>
-								</label>
-								<input type="date" id="mbrreg-add-dob" name="date_of_birth" <?php echo get_option( 'mbrreg_require_date_of_birth', false ) ? 'required' : ''; ?>>
-							</div>
-
-							<div class="mbrreg-form-row">
-								<label for="mbrreg-add-pob">
-									<?php esc_html_e( 'Place of Birth', 'member-registration-plugin' ); ?>
-									<?php if ( get_option( 'mbrreg_require_place_of_birth', false ) ) : ?>
-										<span class="required">*</span>
-									<?php endif; ?>
-								</label>
-								<input type="text" id="mbrreg-add-pob" name="place_of_birth" <?php echo get_option( 'mbrreg_require_place_of_birth', false ) ? 'required' : ''; ?>>
 							</div>
 						</fieldset>
 

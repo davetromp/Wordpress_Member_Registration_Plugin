@@ -163,18 +163,19 @@ class Mbrreg_Admin {
 			'mbrreg-admin',
 			'mbrregAdmin',
 			array(
-				'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
-				'nonce'            => wp_create_nonce( 'mbrreg_admin_nonce' ),
-				'confirmDelete'    => __( 'Are you sure you want to delete this member? This action cannot be undone.', 'member-registration-plugin' ),
-				'confirmBulk'      => __( 'Are you sure you want to perform this action on the selected members?', 'member-registration-plugin' ),
+				'ajaxUrl'            => admin_url( 'admin-ajax.php' ),
+				'nonce'              => wp_create_nonce( 'mbrreg_admin_nonce' ),
+				'confirmDelete'      => __( 'Are you sure you want to delete this member? This action cannot be undone.', 'member-registration-plugin' ),
+				'confirmBulk'        => __( 'Are you sure you want to perform this action on the selected members?', 'member-registration-plugin' ),
 				'confirmFieldDelete' => __( 'Are you sure you want to delete this custom field? All associated data will be lost.', 'member-registration-plugin' ),
-				'processing'       => __( 'Processing...', 'member-registration-plugin' ),
-				'success'          => __( 'Success!', 'member-registration-plugin' ),
-				'error'            => __( 'An error occurred.', 'member-registration-plugin' ),
-				'selectMembers'    => __( 'Please select at least one member.', 'member-registration-plugin' ),
-				'selectAction'     => __( 'Please select an action.', 'member-registration-plugin' ),
-				'importSuccess'    => __( 'Import completed successfully!', 'member-registration-plugin' ),
-				'exportSuccess'    => __( 'Export completed successfully!', 'member-registration-plugin' ),
+				'processing'         => __( 'Processing...', 'member-registration-plugin' ),
+				'success'            => __( 'Success!', 'member-registration-plugin' ),
+				'error'              => __( 'An error occurred.', 'member-registration-plugin' ),
+				'selectMembers'      => __( 'Please select at least one member.', 'member-registration-plugin' ),
+				'selectAction'       => __( 'Please select an action.', 'member-registration-plugin' ),
+				'importSuccess'      => __( 'Import completed successfully!', 'member-registration-plugin' ),
+				'exportSuccess'      => __( 'Export completed successfully!', 'member-registration-plugin' ),
+				'dateFormat'         => get_option( 'mbrreg_date_format', 'eu' ),
 			)
 		);
 	}
@@ -192,13 +193,12 @@ class Mbrreg_Admin {
 		register_setting( 'mbrreg_settings', 'mbrreg_registration_page_id' );
 		register_setting( 'mbrreg_settings', 'mbrreg_login_redirect_page' );
 
-		// Required fields settings.
+		// Display settings.
+		register_setting( 'mbrreg_settings', 'mbrreg_date_format' );
+
+		// Required fields settings (only first_name and last_name now).
 		register_setting( 'mbrreg_settings', 'mbrreg_require_first_name' );
 		register_setting( 'mbrreg_settings', 'mbrreg_require_last_name' );
-		register_setting( 'mbrreg_settings', 'mbrreg_require_address' );
-		register_setting( 'mbrreg_settings', 'mbrreg_require_telephone' );
-		register_setting( 'mbrreg_settings', 'mbrreg_require_date_of_birth' );
-		register_setting( 'mbrreg_settings', 'mbrreg_require_place_of_birth' );
 
 		// Email settings.
 		register_setting( 'mbrreg_settings', 'mbrreg_email_from_name' );

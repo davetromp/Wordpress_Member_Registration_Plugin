@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name: Member Registration Plugin
- * Plugin URI: https://example.com/member-registration-plugin
+ * Plugin URI: https://dtntmedia.com/member-registration-plugin
  * Description: A comprehensive member registration and management system for sports clubs. Allows users to register and manage multiple members (e.g., family members) under one account.
- * Version: 1.1.0
- * Author: Sports Club Developer
- * Author URI: https://example.com
+ * Version: 1.2.0
+ * Author: Dave Tromp
+ * Author URI: https://dtntmedia.com
  * License: GPL-2.0+
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain: member-registration-plugin
@@ -22,7 +22,7 @@ if ( ! defined( 'WPINC' ) ) {
 /**
  * Current plugin version.
  */
-define( 'MBRREG_VERSION', '1.1.0' );
+define( 'MBRREG_VERSION', '1.2.0' );
 
 /**
  * Plugin base path.
@@ -193,4 +193,98 @@ function mbrreg_get_database() {
 		$database = new Mbrreg_Database();
 	}
 	return $database;
+}
+
+/**
+ * Format a date according to plugin settings.
+ *
+ * @since 1.2.0
+ * @param string $date       Date in Y-m-d format or other parseable format.
+ * @param string $format     Optional. Override format. Default empty uses plugin setting.
+ * @param bool   $for_input  Optional. If true, returns format suitable for display near inputs.
+ * @return string Formatted date or empty string if invalid.
+ */
+function mbrreg_format_date( $date, $format = '', $for_input = false ) {
+	if ( empty( $date ) || '0000-00-00' === $date ) {
+		return '';
+	}
+
+	$timestamp = strtotime( $date );
+	if ( false === $timestamp ) {
+		return '';
+	}
+
+	if ( empty( $format ) ) {
+		$date_format = get_option( 'mbrreg_date_format', 'eu' );
+		if ( 'us' === $date_format ) {
+			$format = 'm/d/Y';
+		} else {
+			$format = 'd/m/Y';
+		}
+	}
+
+	return date_i18n( $format, $timestamp );
+}
+
+/**
+ * Parse a date from display format to database format (Y-m-d).
+ *
+ * @since 1.2.0
+ * @param string $date Date in display format.
+ * @return string Date in Y-m-d format or empty string if invalid.
+ */
+function mbrreg_parse_date( $date ) {
+	if ( empty( $date ) ) {
+		return '';
+	}
+
+	// If already in Y-m-d format (from HTML5 date input), return as is.
+	if ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
+		return $date;
+	}
+
+	$date_format = get_option( 'mbrreg_date_format', 'eu' );
+
+	// Try to parse based on setting.
+	if ( 'us' === $date_format ) {
+		// m/d/Y format.
+		$parsed = DateTime::createFromFormat( 'm/d/Y', $date );
+	} else {
+		// d/m/Y format.
+		$parsed = DateTime::createFromFormat( 'd/m/Y', $date );
+	}
+
+	if ( $parsed ) {
+		return $parsed->format( 'Y-m-d' );
+	}
+
+	// Fallback: try strtotime.
+	$timestamp = strtotime( $date );
+	if ( false !== $timestamp ) {
+		return date( 'Y-m-d', $timestamp );
+	}
+
+	return '';
+}
+
+/**
+ * Get the date format string for display.
+ *
+ * @since 1.2.0
+ * @return string Date format string (e.g., 'd/m/Y' or 'm/d/Y').
+ */
+function mbrreg_get_date_format() {
+	$date_format = get_option( 'mbrreg_date_format', 'eu' );
+	return 'us' === $date_format ? 'm/d/Y' : 'd/m/Y';
+}
+
+/**
+ * Get the date format placeholder for inputs.
+ *
+ * @since 1.2.0
+ * @return string Placeholder string (e.g., 'DD/MM/YYYY' or 'MM/DD/YYYY').
+ */
+function mbrreg_get_date_placeholder() {
+	$date_format = get_option( 'mbrreg_date_format', 'eu' );
+	return 'us' === $date_format ? 'MM/DD/YYYY' : 'DD/MM/YYYY';
 }

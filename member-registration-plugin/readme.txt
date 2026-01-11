@@ -1,5 +1,5 @@
 === Member Registration Plugin ===
-Contributors: sportsclubdeveloper
+Contributors: Dave Tromp
 Tags: members, registration, membership, sports club, user management
 Requires at least: 5.0
 Tested up to: 6.4
@@ -27,7 +27,7 @@ Member Registration Plugin is a powerful yet easy-to-use WordPress plugin design
 
 **Perfect For:**
 
-* Sports clubs (football, tennis, swimming, etc.)
+* Sports clubs (football, tennis, swimming, martial arts, etc.)
 * Youth organizations
 * Community clubs
 * Any organization needing family-based member management
@@ -46,6 +46,14 @@ Member Registration Plugin is a powerful yet easy-to-use WordPress plugin design
 3. Go to 'Members' > 'Settings' to configure the plugin
 4. Create a new page and add the `[mbrreg_member_area]` shortcode
 5. Set this page as the "Member Area Page" in the plugin settings
+
+Or
+
+1. Download the plugin .zip file
+2. Click add plugin in the Wordpress backend.
+3. Click 'upload plugin' and select the downloaded plugin.
+4. Click 'install now'
+5. Activate the plugin 
 
 == Frequently Asked Questions ==
 
@@ -98,3 +106,27 @@ Yes! The plugin is fully translatable and includes a Dutch translation. You can 
 
 = 1.1.0 =
 Major update with support for multiple members per account, CSV import/export, and admin-only fields. Database will be automatically updated upon activation.
+
+= 1.2.0 =
+Adjustments Made:
+1. Date Format Setting** - Added a new "Display Settings" section in settings with option to choose between European (DD/MM/YYYY) and US (MM/DD/YYYY) date formats. Helper functions `mbrreg_format_date()`, `mbrreg_parse_date()`, `mbrreg_get_date_format()`, and `mbrreg_get_date_placeholder()` handle date formatting throughout the plugin.
+2. Removed Default Fields** - Removed address, telephone, date of birth, and place of birth from the default member fields. Only first_name and last_name remain as default personal details. A migration function was added to convert any existing data in these fields to custom fields automatically.
+3. Multilingual Emails** - All email content is now translatable using the standard WordPress translation system. The Dutch translation file has been updated with complete translations for all email templates.
+Fixes Made:
+1. Modal Centering** - Fixed the CSS for modals to properly center on both desktop and mobile screens. The modal now uses fixed positioning with proper viewport centering. On mobile, the modal expands to cover the full screen.
+2. Input Field Sizing** - Fixed input fields to properly fit within their form containers by adding `width: 100%`, `max-width: 100%`, and `box-sizing: border-box` to all input elements.
+Files Changed:
+- `member-registration-plugin.php` - Updated version, added date helper functions
+- `includes/class-mbrreg-activator.php` - Simplified table schema, added migration
+- `includes/class-mbrreg-database.php` - Removed old field references
+- `includes/class-mbrreg-member.php` - Removed old field handling
+- `includes/class-mbrreg-email.php` - Made emails translatable
+- `includes/class-mbrreg-admin.php` - Added date format setting registration
+- `admin/partials/mbrreg-admin-settings.php` - Added date format option, simplified required fields
+- `admin/partials/mbrreg-admin-member-edit.php` - Simplified form
+- `admin/partials/mbrreg-admin-members.php` - Updated date display
+- `admin/partials/mbrreg-admin-import-export.php` - Updated CSV format
+- `public/partials/mbrreg-register-form.php` - Simplified form
+- `public/partials/mbrreg-member-dashboard.php` - Simplified form
+- `public/css/mbrreg-public.css` - Fixed modal and input styling
+- `languages/member-registration-plugin-nl_NL.po` - Added email translations

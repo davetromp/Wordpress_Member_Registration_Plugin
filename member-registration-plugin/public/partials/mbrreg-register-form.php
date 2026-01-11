@@ -78,7 +78,7 @@ if ( $activation_success ) {
 			</div>
 		</fieldset>
 
-		<!-- Personal Details -->
+		<!-- Personal Details (only first_name and last_name) -->
 		<fieldset class="mbrreg-fieldset">
 			<legend><?php esc_html_e( 'Personal Details', 'member-registration-plugin' ); ?></legend>
 
@@ -100,46 +100,6 @@ if ( $activation_success ) {
 					<?php endif; ?>
 				</label>
 				<input type="text" id="mbrreg-last-name" name="last_name" <?php echo get_option( 'mbrreg_require_last_name', false ) ? 'required' : ''; ?>>
-			</div>
-
-			<div class="mbrreg-form-row">
-				<label for="mbrreg-address">
-					<?php esc_html_e( 'Address', 'member-registration-plugin' ); ?>
-					<?php if ( get_option( 'mbrreg_require_address', false ) ) : ?>
-						<span class="required">*</span>
-					<?php endif; ?>
-				</label>
-				<textarea id="mbrreg-address" name="address" rows="3" <?php echo get_option( 'mbrreg_require_address', false ) ? 'required' : ''; ?>></textarea>
-			</div>
-
-			<div class="mbrreg-form-row">
-				<label for="mbrreg-telephone">
-					<?php esc_html_e( 'Telephone Number', 'member-registration-plugin' ); ?>
-					<?php if ( get_option( 'mbrreg_require_telephone', false ) ) : ?>
-						<span class="required">*</span>
-					<?php endif; ?>
-				</label>
-				<input type="tel" id="mbrreg-telephone" name="telephone" <?php echo get_option( 'mbrreg_require_telephone', false ) ? 'required' : ''; ?>>
-			</div>
-
-			<div class="mbrreg-form-row">
-				<label for="mbrreg-dob">
-					<?php esc_html_e( 'Date of Birth', 'member-registration-plugin' ); ?>
-					<?php if ( get_option( 'mbrreg_require_date_of_birth', false ) ) : ?>
-						<span class="required">*</span>
-					<?php endif; ?>
-				</label>
-				<input type="date" id="mbrreg-dob" name="date_of_birth" <?php echo get_option( 'mbrreg_require_date_of_birth', false ) ? 'required' : ''; ?>>
-			</div>
-
-			<div class="mbrreg-form-row">
-				<label for="mbrreg-pob">
-					<?php esc_html_e( 'Place of Birth', 'member-registration-plugin' ); ?>
-					<?php if ( get_option( 'mbrreg_require_place_of_birth', false ) ) : ?>
-						<span class="required">*</span>
-					<?php endif; ?>
-				</label>
-				<input type="text" id="mbrreg-pob" name="place_of_birth" <?php echo get_option( 'mbrreg_require_place_of_birth', false ) ? 'required' : ''; ?>>
 			</div>
 		</fieldset>
 

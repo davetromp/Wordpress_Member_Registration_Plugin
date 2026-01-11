@@ -33,12 +33,13 @@ $custom_fields = ( new Mbrreg_Custom_Fields() )->get_all();
 					<li><strong><?php esc_html_e( 'Email', 'member-registration-plugin' ); ?></strong> (<?php esc_html_e( 'required', 'member-registration-plugin' ); ?>)</li>
 					<li><strong><?php esc_html_e( 'First Name', 'member-registration-plugin' ); ?></strong></li>
 					<li><strong><?php esc_html_e( 'Last Name', 'member-registration-plugin' ); ?></strong></li>
-					<li><strong><?php esc_html_e( 'Address', 'member-registration-plugin' ); ?></strong></li>
-					<li><strong><?php esc_html_e( 'Telephone', 'member-registration-plugin' ); ?></strong></li>
-					<li><strong><?php esc_html_e( 'Date of Birth', 'member-registration-plugin' ); ?></strong> (<?php esc_html_e( 'format: YYYY-MM-DD', 'member-registration-plugin' ); ?>)</li>
-					<li><strong><?php esc_html_e( 'Place of Birth', 'member-registration-plugin' ); ?></strong></li>
 					<?php foreach ( $custom_fields as $field ) : ?>
-						<li><strong><?php echo esc_html( $field->field_label ); ?></strong></li>
+						<li>
+							<strong><?php echo esc_html( $field->field_label ); ?></strong>
+							<?php if ( 'date' === $field->field_type ) : ?>
+								(<?php echo esc_html( mbrreg_get_date_placeholder() ); ?>)
+							<?php endif; ?>
+						</li>
 					<?php endforeach; ?>
 				</ol>
 				<p><strong><?php esc_html_e( 'Note:', 'member-registration-plugin' ); ?></strong> <?php esc_html_e( 'The first row should contain column headers and will be skipped during import.', 'member-registration-plugin' ); ?></p>
@@ -119,8 +120,7 @@ $custom_fields = ( new Mbrreg_Custom_Fields() )->get_all();
 				<p><?php esc_html_e( 'The exported CSV will include:', 'member-registration-plugin' ); ?></p>
 				<ul>
 					<li><?php esc_html_e( 'Member ID, Username, Email', 'member-registration-plugin' ); ?></li>
-					<li><?php esc_html_e( 'First Name, Last Name, Address, Telephone', 'member-registration-plugin' ); ?></li>
-					<li><?php esc_html_e( 'Date of Birth, Place of Birth', 'member-registration-plugin' ); ?></li>
+					<li><?php esc_html_e( 'First Name, Last Name', 'member-registration-plugin' ); ?></li>
 					<li><?php esc_html_e( 'Status, Admin Status, Registration Date', 'member-registration-plugin' ); ?></li>
 					<li><?php esc_html_e( 'All custom field values', 'member-registration-plugin' ); ?></li>
 				</ul>
@@ -135,15 +135,15 @@ jQuery(document).ready(function($) {
 	$('#mbrreg-download-sample').on('click', function(e) {
 		e.preventDefault();
 
-		var headers = ['Email', 'First Name', 'Last Name', 'Address', 'Telephone', 'Date of Birth', 'Place of Birth'];
+		var headers = ['Email', 'First Name', 'Last Name'];
 		<?php foreach ( $custom_fields as $field ) : ?>
 		headers.push('<?php echo esc_js( $field->field_label ); ?>');
 		<?php endforeach; ?>
 
 		var sampleData = [
 			headers,
-			['john.doe@example.com', 'John', 'Doe', '123 Main St, City', '+1234567890', '1990-01-15', 'New York'<?php foreach ( $custom_fields as $field ) : ?>, ''<?php endforeach; ?>],
-			['jane.smith@example.com', 'Jane', 'Smith', '456 Oak Ave, Town', '+0987654321', '1985-06-20', 'Los Angeles'<?php foreach ( $custom_fields as $field ) : ?>, ''<?php endforeach; ?>]
+			['john.doe@example.com', 'John', 'Doe'<?php foreach ( $custom_fields as $field ) : ?>, ''<?php endforeach; ?>],
+			['jane.smith@example.com', 'Jane', 'Smith'<?php foreach ( $custom_fields as $field ) : ?>, ''<?php endforeach; ?>]
 		];
 
 		var csvContent = sampleData.map(function(row) {

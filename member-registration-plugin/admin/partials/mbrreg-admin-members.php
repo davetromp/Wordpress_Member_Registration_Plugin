@@ -13,9 +13,9 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 // Get filter parameters.
-$status  = isset( $_GET['status'] ) ? sanitize_text_field( wp_unslash( $_GET['status'] ) ) : '';
-$search  = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
-$paged   = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
+$status   = isset( $_GET['status'] ) ? sanitize_text_field( wp_unslash( $_GET['status'] ) ) : '';
+$search   = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
+$paged    = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
 $per_page = 20;
 
 // Build query args.
@@ -27,9 +27,10 @@ $args = array(
 );
 
 // Get members.
-$database      = new Mbrreg_Database();
-$custom_fields = new Mbrreg_Custom_Fields();
+$database       = new Mbrreg_Database();
+$custom_fields  = new Mbrreg_Custom_Fields();
 $member_handler = new Mbrreg_Member( $database, $custom_fields, new Mbrreg_Email() );
+$statuses       = Mbrreg_Member::get_statuses();
 
 $members       = $member_handler->get_all( $args );
 $total_members = $member_handler->count( $args );
@@ -181,14 +182,14 @@ $count_pending  = $member_handler->count( array( 'status' => 'pending', 'search'
 							</td>
 							<td><?php echo esc_html( $member->email ); ?></td>
 							<td>
-								<?php 
+								<?php
 								$user = get_user_by( 'ID', $member->user_id );
-								echo esc_html( $user ? $user->user_login : '-' ); 
+								echo esc_html( $user ? $user->user_login : '-' );
 								?>
 							</td>
 							<td>
 								<span class="mbrreg-status mbrreg-status-<?php echo esc_attr( $member->status ); ?>">
-									<?php echo esc_html( Mbrreg_Member::$statuses[ $member->status ] ); ?>
+									<?php echo esc_html( $statuses[ $member->status ] ); ?>
 								</span>
 							</td>
 							<td>
@@ -198,7 +199,7 @@ $count_pending  = $member_handler->count( array( 'status' => 'pending', 'search'
 									<span class="dashicons dashicons-minus" style="color: #999;"></span>
 								<?php endif; ?>
 							</td>
-							<td><?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $member->created_at ) ) ); ?></td>
+							<td><?php echo esc_html( mbrreg_format_date( $member->created_at ) ); ?></td>
 						</tr>
 					<?php endforeach; ?>
 				<?php else : ?>

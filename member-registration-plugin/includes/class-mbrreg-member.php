@@ -72,6 +72,20 @@ class Mbrreg_Member {
 	}
 
 	/**
+	 * Get translated statuses.
+	 *
+	 * @since 1.2.0
+	 * @return array
+	 */
+	public static function get_statuses() {
+		return array(
+			'pending'  => __( 'Pending Activation', 'member-registration-plugin' ),
+			'active'   => __( 'Active', 'member-registration-plugin' ),
+			'inactive' => __( 'Inactive', 'member-registration-plugin' ),
+		);
+	}
+
+	/**
 	 * Register a new member.
 	 *
 	 * @since 1.0.0
@@ -156,17 +170,13 @@ class Mbrreg_Member {
 
 		// Generate activation key.
 		$activation_key = wp_generate_password( 32, false );
-		$status         = $is_import ? 'pending' : 'pending';
+		$status         = 'pending';
 
-		// Prepare member data.
+		// Prepare member data (simplified - only first_name and last_name).
 		$member_data = array(
 			'user_id'        => $user_id,
 			'first_name'     => isset( $data['first_name'] ) ? sanitize_text_field( $data['first_name'] ) : '',
 			'last_name'      => isset( $data['last_name'] ) ? sanitize_text_field( $data['last_name'] ) : '',
-			'address'        => isset( $data['address'] ) ? sanitize_textarea_field( $data['address'] ) : '',
-			'telephone'      => isset( $data['telephone'] ) ? sanitize_text_field( $data['telephone'] ) : '',
-			'date_of_birth'  => ! empty( $data['date_of_birth'] ) ? sanitize_text_field( $data['date_of_birth'] ) : null,
-			'place_of_birth' => isset( $data['place_of_birth'] ) ? sanitize_text_field( $data['place_of_birth'] ) : '',
 			'status'         => $status,
 			'is_admin'       => 0,
 			'activation_key' => $activation_key,
@@ -320,23 +330,7 @@ class Mbrreg_Member {
 			$update_data['last_name'] = sanitize_text_field( $data['last_name'] );
 		}
 
-		if ( isset( $data['address'] ) ) {
-			$update_data['address'] = sanitize_textarea_field( $data['address'] );
-		}
-
-		if ( isset( $data['telephone'] ) ) {
-			$update_data['telephone'] = sanitize_text_field( $data['telephone'] );
-		}
-
-		if ( isset( $data['date_of_birth'] ) ) {
-			$update_data['date_of_birth'] = ! empty( $data['date_of_birth'] ) ? sanitize_text_field( $data['date_of_birth'] ) : null;
-		}
-
-		if ( isset( $data['place_of_birth'] ) ) {
-			$update_data['place_of_birth'] = sanitize_text_field( $data['place_of_birth'] );
-		}
-
-		if ( isset( $data['status'] ) && array_key_exists( $data['status'], self::$statuses ) ) {
+		if ( isset( $data['status'] ) && array_key_exists( $data['status'], self::get_statuses() ) ) {
 			$update_data['status'] = $data['status'];
 		}
 
@@ -632,14 +626,10 @@ class Mbrreg_Member {
 	 * @return true|WP_Error True on success, WP_Error on validation failure.
 	 */
 	private function validate_member_data( $data, $is_update = false ) {
-		// Check required standard fields.
+		// Check required standard fields (only first_name and last_name now).
 		$required_fields = array(
-			'first_name'     => get_option( 'mbrreg_require_first_name', false ),
-			'last_name'      => get_option( 'mbrreg_require_last_name', false ),
-			'address'        => get_option( 'mbrreg_require_address', false ),
-			'telephone'      => get_option( 'mbrreg_require_telephone', false ),
-			'date_of_birth'  => get_option( 'mbrreg_require_date_of_birth', false ),
-			'place_of_birth' => get_option( 'mbrreg_require_place_of_birth', false ),
+			'first_name' => get_option( 'mbrreg_require_first_name', false ),
+			'last_name'  => get_option( 'mbrreg_require_last_name', false ),
 		);
 
 		foreach ( $required_fields as $field => $is_required ) {
@@ -670,14 +660,6 @@ class Mbrreg_Member {
 					/* translators: %s: Field label */
 					sprintf( __( '%s is required.', 'member-registration-plugin' ), $field->field_label )
 				);
-			}
-		}
-
-		// Validate date of birth format.
-		if ( ! empty( $data['date_of_birth'] ) ) {
-			$date = DateTime::createFromFormat( 'Y-m-d', $data['date_of_birth'] );
-			if ( ! $date || $date->format( 'Y-m-d' ) !== $data['date_of_birth'] ) {
-				return new WP_Error( 'invalid_date', __( 'Please enter a valid date of birth.', 'member-registration-plugin' ) );
 			}
 		}
 
@@ -813,17 +795,13 @@ class Mbrreg_Member {
 		$members       = $this->get_all( $args );
 		$custom_fields = $this->custom_fields->get_all();
 
-		// Build CSV header.
+		// Build CSV header (simplified - removed old default fields).
 		$headers = array(
 			'ID',
 			'Username',
 			'Email',
 			'First Name',
 			'Last Name',
-			'Address',
-			'Telephone',
-			'Date of Birth',
-			'Place of Birth',
 			'Status',
 			'Is Admin',
 			'Registered',
@@ -846,18 +824,19 @@ class Mbrreg_Member {
 				$member->email,
 				$member->first_name,
 				$member->last_name,
-				$member->address,
-				$member->telephone,
-				$member->date_of_birth,
-				$member->place_of_birth,
 				$member->status,
 				$member->is_admin ? 'Yes' : 'No',
-				$member->created_at,
+				mbrreg_format_date( $member->created_at, 'Y-m-d H:i:s' ),
 			);
 
 			// Add custom field values.
 			foreach ( $custom_fields as $field ) {
-				$row[] = isset( $member->custom_fields[ $field->id ] ) ? $member->custom_fields[ $field->id ] : '';
+				$value = isset( $member->custom_fields[ $field->id ] ) ? $member->custom_fields[ $field->id ] : '';
+				// Format date fields for export.
+				if ( 'date' === $field->field_type && ! empty( $value ) ) {
+					$value = mbrreg_format_date( $value );
+				}
+				$row[] = $value;
 			}
 
 			fputcsv( $output, $row );
@@ -926,24 +905,25 @@ class Mbrreg_Member {
 	 * @return array Member data.
 	 */
 	private function parse_csv_row( $row ) {
-		// Expected column order: Email, First Name, Last Name, Address, Telephone, Date of Birth, Place of Birth.
+		// Expected column order: Email, First Name, Last Name, then custom fields.
 		$data = array(
-			'email'          => isset( $row[0] ) ? trim( $row[0] ) : '',
-			'first_name'     => isset( $row[1] ) ? trim( $row[1] ) : '',
-			'last_name'      => isset( $row[2] ) ? trim( $row[2] ) : '',
-			'address'        => isset( $row[3] ) ? trim( $row[3] ) : '',
-			'telephone'      => isset( $row[4] ) ? trim( $row[4] ) : '',
-			'date_of_birth'  => isset( $row[5] ) ? trim( $row[5] ) : '',
-			'place_of_birth' => isset( $row[6] ) ? trim( $row[6] ) : '',
+			'email'      => isset( $row[0] ) ? trim( $row[0] ) : '',
+			'first_name' => isset( $row[1] ) ? trim( $row[1] ) : '',
+			'last_name'  => isset( $row[2] ) ? trim( $row[2] ) : '',
 		);
 
 		// Parse additional custom fields if present.
 		$custom_fields = $this->custom_fields->get_all();
-		$col_index     = 7;
+		$col_index     = 3;
 
 		foreach ( $custom_fields as $field ) {
 			if ( isset( $row[ $col_index ] ) ) {
-				$data[ 'custom_' . $field->id ] = trim( $row[ $col_index ] );
+				$value = trim( $row[ $col_index ] );
+				// Parse date fields from display format to database format.
+				if ( 'date' === $field->field_type && ! empty( $value ) ) {
+					$value = mbrreg_parse_date( $value );
+				}
+				$data[ 'custom_' . $field->id ] = $value;
 			}
 			++$col_index;
 		}

@@ -33,6 +33,7 @@ class Mbrreg_Activator {
 		self::create_tables();
 		self::set_default_options();
 		self::create_plugin_roles();
+		self::maybe_migrate_data();
 
 		// Set flag for activation redirect.
 		set_transient( 'mbrreg_activation_redirect', true, 30 );
@@ -55,17 +56,13 @@ class Mbrreg_Activator {
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-		// Members table - now supports multiple members per user.
+		// Members table - simplified to only first_name and last_name as default fields.
 		$table_members = $table_prefix . 'members';
 		$sql_members   = "CREATE TABLE {$table_members} (
 			id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
 			user_id bigint(20) UNSIGNED NOT NULL,
 			first_name varchar(100) DEFAULT '' NOT NULL,
 			last_name varchar(100) DEFAULT '' NOT NULL,
-			address text DEFAULT '' NOT NULL,
-			telephone varchar(50) DEFAULT '' NOT NULL,
-			date_of_birth date DEFAULT NULL,
-			place_of_birth varchar(100) DEFAULT '' NOT NULL,
 			status varchar(20) DEFAULT 'pending' NOT NULL,
 			is_admin tinyint(1) DEFAULT 0 NOT NULL,
 			activation_key varchar(100) DEFAULT '' NOT NULL,
@@ -129,16 +126,13 @@ class Mbrreg_Activator {
 		$default_options = array(
 			'require_first_name'     => false,
 			'require_last_name'      => false,
-			'require_address'        => false,
-			'require_telephone'      => false,
-			'require_date_of_birth'  => false,
-			'require_place_of_birth' => false,
 			'email_from_name'        => get_bloginfo( 'name' ),
 			'email_from_address'     => get_option( 'admin_email' ),
 			'registration_page_id'   => 0,
 			'login_redirect_page'    => 0,
 			'allow_registration'     => true,
 			'allow_multiple_members' => true,
+			'date_format'            => 'eu', // 'eu' for d/m/Y, 'us' for m/d/Y.
 		);
 
 		foreach ( $default_options as $key => $value ) {
@@ -165,5 +159,122 @@ class Mbrreg_Activator {
 			$admin_role->add_cap( 'mbrreg_export_members' );
 			$admin_role->add_cap( 'mbrreg_import_members' );
 		}
+	}
+
+	/**
+	 * Migrate data from older versions if needed.
+	 *
+	 * @since 1.2.0
+	 * @return void
+	 */
+	private static function maybe_migrate_data() {
+		global $wpdb;
+
+		$current_version = get_option( 'mbrreg_db_version', '1.0.0' );
+		$table_members   = $wpdb->prefix . MBRREG_TABLE_PREFIX . 'members';
+
+		// Check if old columns exist and migrate data to custom fields.
+		if ( version_compare( $current_version, '1.2.0', '<' ) ) {
+			// Check if the old columns exist.
+			$columns = $wpdb->get_col( "DESCRIBE {$table_members}", 0 );
+
+			$old_fields = array( 'address', 'telephone', 'date_of_birth', 'place_of_birth' );
+			$fields_to_migrate = array_intersect( $old_fields, $columns );
+
+			if ( ! empty( $fields_to_migrate ) ) {
+				self::migrate_old_fields_to_custom_fields( $fields_to_migrate );
+			}
+		}
+	}
+
+	/**
+	 * Migrate old default fields to custom fields.
+	 *
+	 * @since 1.2.0
+	 * @param array $fields Fields to migrate.
+	 * @return void
+	 */
+	private static function migrate_old_fields_to_custom_fields( $fields ) {
+		global $wpdb;
+
+		$table_members       = $wpdb->prefix . MBRREG_TABLE_PREFIX . 'members';
+		$table_custom_fields = $wpdb->prefix . MBRREG_TABLE_PREFIX . 'custom_fields';
+		$table_member_meta   = $wpdb->prefix . MBRREG_TABLE_PREFIX . 'member_meta';
+
+		$field_config = array(
+			'address'        => array(
+				'label' => __( 'Address', 'member-registration-plugin' ),
+				'type'  => 'textarea',
+			),
+			'telephone'      => array(
+				'label' => __( 'Telephone', 'member-registration-plugin' ),
+				'type'  => 'text',
+			),
+			'date_of_birth'  => array(
+				'label' => __( 'Date of Birth', 'member-registration-plugin' ),
+				'type'  => 'date',
+			),
+			'place_of_birth' => array(
+				'label' => __( 'Place of Birth', 'member-registration-plugin' ),
+				'type'  => 'text',
+			),
+		);
+
+		foreach ( $fields as $field_name ) {
+			if ( ! isset( $field_config[ $field_name ] ) ) {
+				continue;
+			}
+
+			// Check if custom field already exists.
+			$existing = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT id FROM {$table_custom_fields} WHERE field_name = %s",
+					$field_name
+				)
+			);
+
+			if ( $existing ) {
+				continue;
+			}
+
+			// Create custom field.
+			$wpdb->insert(
+				$table_custom_fields,
+				array(
+					'field_name'    => $field_name,
+					'field_label'   => $field_config[ $field_name ]['label'],
+					'field_type'    => $field_config[ $field_name ]['type'],
+					'field_options' => '',
+					'is_required'   => get_option( 'mbrreg_require_' . $field_name, 0 ) ? 1 : 0,
+					'is_admin_only' => 0,
+					'field_order'   => 0,
+				),
+				array( '%s', '%s', '%s', '%s', '%d', '%d', '%d' )
+			);
+
+			$field_id = $wpdb->insert_id;
+
+			if ( $field_id ) {
+				// Migrate existing data.
+				$members = $wpdb->get_results(
+					"SELECT id, {$field_name} FROM {$table_members} WHERE {$field_name} IS NOT NULL AND {$field_name} != ''"
+				);
+
+				foreach ( $members as $member ) {
+					$wpdb->insert(
+						$table_member_meta,
+						array(
+							'member_id'  => $member->id,
+							'field_id'   => $field_id,
+							'meta_value' => $member->$field_name,
+						),
+						array( '%d', '%d', '%s' )
+					);
+				}
+			}
+		}
+
+		// Note: We don't drop the old columns to preserve data integrity.
+		// They can be removed manually after confirming migration success.
 	}
 }

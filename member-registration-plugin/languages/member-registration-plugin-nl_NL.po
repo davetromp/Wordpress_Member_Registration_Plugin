@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Member Registration Plugin 1.1.0\n"
+"Project-Id-Version: Member Registration Plugin 1.2.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-01-01 12:00+0000\n"
-"PO-Revision-Date: 2026-01-10 11:45+0100\n"
+"PO-Revision-Date: 2026-01-11 15:46+0100\n"
 "Last-Translator: \n"
 "Language-Team: Dutch\n"
 "Language: nl_NL\n"
@@ -98,18 +98,6 @@ msgstr "Voornaam"
 
 msgid "Last Name"
 msgstr "Achternaam"
-
-msgid "Address"
-msgstr "Adres"
-
-msgid "Telephone Number"
-msgstr "Telefoonnummer"
-
-msgid "Date of Birth"
-msgstr "Geboortedatum"
-
-msgid "Place of Birth"
-msgstr "Geboorteplaats"
 
 msgid "Additional Information"
 msgstr "Aanvullende Informatie"
@@ -234,6 +222,22 @@ msgstr "Fout"
 
 msgid "Success"
 msgstr "Succes"
+
+# Display Settings
+msgid "Display Settings"
+msgstr "Weergave Instellingen"
+
+msgid "Date Format"
+msgstr "Datumnotatie"
+
+msgid "European (DD/MM/YYYY)"
+msgstr "Europees (DD/MM/JJJJ)"
+
+msgid "US (MM/DD/YYYY)"
+msgstr "Amerikaans (MM/DD/JJJJ)"
+
+msgid "Choose how dates are displayed throughout the plugin."
+msgstr "Kies hoe datums worden weergegeven in de hele plugin."
 
 # Admin - Members List
 msgid "All"
@@ -506,9 +510,6 @@ msgstr "Uw CSV-bestand moet de volgende kolommen in volgorde bevatten:"
 msgid "required"
 msgstr "verplicht"
 
-msgid "format: YYYY-MM-DD"
-msgstr "formaat: JJJJ-MM-DD"
-
 msgid "Note:"
 msgstr "Opmerking:"
 
@@ -558,11 +559,8 @@ msgstr "Het geëxporteerde CSV-bestand bevat:"
 msgid "Member ID, Username, Email"
 msgstr "Lid ID, Gebruikersnaam, E-mail"
 
-msgid "First Name, Last Name, Address, Telephone"
-msgstr "Voornaam, Achternaam, Adres, Telefoonnummer"
-
-msgid "Date of Birth, Place of Birth"
-msgstr "Geboortedatum, Geboorteplaats"
+msgid "First Name, Last Name"
+msgstr "Voornaam, Achternaam"
 
 msgid "Status, Admin Status, Registration Date"
 msgstr "Status, Beheerdersstatus, Registratiedatum"
@@ -641,11 +639,13 @@ msgid "Required Fields"
 msgstr "Verplichte Velden"
 
 msgid ""
-"Select which fields should be required during registration and profile "
-"updates."
+"Select which default fields should be required during registration and "
+"profile updates. Additional fields can be configured in the Custom Fields "
+"section."
 msgstr ""
-"Selecteer welke velden verplicht moeten zijn tijdens registratie en "
-"profielupdates."
+"Selecteer welke standaardvelden verplicht moeten zijn tijdens registratie en "
+"profielupdates. Extra velden kunnen worden geconfigureerd in de sectie "
+"Aangepaste Velden."
 
 msgid "Email Settings"
 msgstr "E-mail Instellingen"
@@ -677,18 +677,30 @@ msgstr "Zelfstandig registratieformulier."
 msgid "Member dashboard (for logged-in members only)."
 msgstr "Ledendashboard (alleen voor ingelogde leden)."
 
-# Emails
+# ==========================================
+# EMAIL TRANSLATIONS
+# ==========================================
+# Activation Email
 msgid "Activate your membership at %s"
 msgstr "Activeer uw lidmaatschap bij %s"
 
+msgid "Hello %1$s"
+msgstr "Hallo %1$s"
+
+# Import Activation Email
 msgid "You have been registered as a member at %s"
 msgstr "U bent geregistreerd als lid bij %s"
 
+# Welcome Email
 msgid "Welcome to %s!"
 msgstr "Welkom bij %s!"
 
+# Admin Notification Email
 msgid "New member registration at %s"
 msgstr "Nieuwe ledenregistratie bij %s"
+
+msgid "A new member has registered"
+msgstr "Een nieuw lid heeft zich geregistreerd"
 
 # Misc
 msgid "Processing..."
@@ -746,9 +758,6 @@ msgstr "Geen lidprofiel gevonden. Neem contact op met een beheerder."
 msgid "%s is required."
 msgstr "%s is verplicht."
 
-msgid "Please enter a valid date of birth."
-msgstr "Voer een geldige geboortedatum in."
-
 msgid "Activation email sent successfully!"
 msgstr "Activatie-e-mail succesvol verzonden!"
 
@@ -763,3 +772,16 @@ msgstr "Selecteer ten minste één lid."
 
 msgid "Please select an action."
 msgstr "Selecteer een actie."
+
+# Legacy field labels (for migration)
+msgid "Address"
+msgstr "Adres"
+
+msgid "Telephone"
+msgstr "Telefoonnummer"
+
+msgid "Date of Birth"
+msgstr "Geboortedatum"
+
+msgid "Place of Birth"
+msgstr "Geboorteplaats"

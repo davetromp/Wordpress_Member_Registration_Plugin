@@ -90,10 +90,6 @@ class Mbrreg_Database {
 			'user_id'        => 0,
 			'first_name'     => '',
 			'last_name'      => '',
-			'address'        => '',
-			'telephone'      => '',
-			'date_of_birth'  => null,
-			'place_of_birth' => '',
 			'status'         => 'pending',
 			'is_admin'       => 0,
 			'activation_key' => '',
@@ -101,21 +97,20 @@ class Mbrreg_Database {
 
 		$data = wp_parse_args( $data, $defaults );
 
+		// Only use the fields that exist in the simplified table.
+		$insert_data = array(
+			'user_id'        => $data['user_id'],
+			'first_name'     => $data['first_name'],
+			'last_name'      => $data['last_name'],
+			'status'         => $data['status'],
+			'is_admin'       => $data['is_admin'],
+			'activation_key' => $data['activation_key'],
+		);
+
 		$result = $this->wpdb->insert(
 			$this->get_members_table(),
-			$data,
-			array(
-				'%d', // user_id.
-				'%s', // first_name.
-				'%s', // last_name.
-				'%s', // address.
-				'%s', // telephone.
-				'%s', // date_of_birth.
-				'%s', // place_of_birth.
-				'%s', // status.
-				'%d', // is_admin.
-				'%s', // activation_key.
-			)
+			$insert_data,
+			array( '%d', '%s', '%s', '%s', '%d', '%s' )
 		);
 
 		if ( false === $result ) {
@@ -134,9 +129,23 @@ class Mbrreg_Database {
 	 * @return bool True on success, false on failure.
 	 */
 	public function update_member( $member_id, $data ) {
+		// Filter out any fields that don't exist in the table.
+		$allowed_fields = array( 'first_name', 'last_name', 'status', 'is_admin', 'activation_key' );
+		$update_data    = array();
+
+		foreach ( $data as $key => $value ) {
+			if ( in_array( $key, $allowed_fields, true ) ) {
+				$update_data[ $key ] = $value;
+			}
+		}
+
+		if ( empty( $update_data ) ) {
+			return true;
+		}
+
 		$result = $this->wpdb->update(
 			$this->get_members_table(),
-			$data,
+			$update_data,
 			array( 'id' => $member_id ),
 			null,
 			array( '%d' )
@@ -296,9 +305,7 @@ class Mbrreg_Database {
 
 		if ( ! empty( $args['search'] ) ) {
 			$search_term     = '%' . $this->wpdb->esc_like( $args['search'] ) . '%';
-			$where_clauses[] = '(first_name LIKE %s OR last_name LIKE %s OR address LIKE %s OR telephone LIKE %s)';
-			$where_values[]  = $search_term;
-			$where_values[]  = $search_term;
+			$where_clauses[] = '(first_name LIKE %s OR last_name LIKE %s)';
 			$where_values[]  = $search_term;
 			$where_values[]  = $search_term;
 		}
@@ -360,9 +367,7 @@ class Mbrreg_Database {
 
 		if ( ! empty( $args['search'] ) ) {
 			$search_term     = '%' . $this->wpdb->esc_like( $args['search'] ) . '%';
-			$where_clauses[] = '(first_name LIKE %s OR last_name LIKE %s OR address LIKE %s OR telephone LIKE %s)';
-			$where_values[]  = $search_term;
-			$where_values[]  = $search_term;
+			$where_clauses[] = '(first_name LIKE %s OR last_name LIKE %s)';
 			$where_values[]  = $search_term;
 			$where_values[]  = $search_term;
 		}
