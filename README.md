@@ -44,6 +44,7 @@ The AI assistant provided:
 All code was reviewed and tested by the human developer before implementation.
 
 ## 📁 File Structure
+```
 member-registration-plugin/
 ├── member-registration-plugin.php    # Main plugin file
 ├── readme.txt                         # WordPress.org readme
@@ -82,7 +83,7 @@ member-registration-plugin/
 │       └── mbrreg-modal.php          # Modal dialogs template
 └── languages/
 └── member-registration-plugin-nl_NL.po # Dutch translation
-
+```
 ## 🚀 Installation
 
 1. Download or clone this repository
