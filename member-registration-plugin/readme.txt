@@ -89,6 +89,13 @@ Yes! The plugin is fully translatable and includes a Dutch translation. You can 
 
 == Changelog ==
 
+= 1.2.2 =
+1. Fix: Membership deactivation by user not working, if there are any required fields
+
+= 1.2.1 =
+1. Fix 1: Admin Role Deactivation Not Working
+2. Fix 2: "My Memberships" Menu Redirect Error
+
 = 1.2.0 =
 Adjustments Made:
 1. Date Format Setting** - Added a new "Display Settings" section in settings with option to choose between European (DD/MM/YYYY) and US (MM/DD/YYYY) date formats. Helper functions `mbrreg_format_date()`, `mbrreg_parse_date()`, `mbrreg_get_date_format()`, and `mbrreg_get_date_placeholder()` handle date formatting throughout the plugin.
