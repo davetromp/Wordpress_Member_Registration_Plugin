@@ -3,7 +3,7 @@
  * Plugin Name: Member Registration Plugin
  * Plugin URI: https://dtntmedia.com/member-registration-plugin
  * Description: A comprehensive member registration and management system for sports clubs. Allows users to register and manage multiple members (e.g., family members) under one account.
- * Version: 1.2.0
+ * Version: 1.2.1
  * Author: Dave Tromp
  * Author URI: https://dtntmedia.com
  * License: GPL-2.0+
@@ -22,7 +22,7 @@ if ( ! defined( 'WPINC' ) ) {
 /**
  * Current plugin version.
  */
-define( 'MBRREG_VERSION', '1.2.0' );
+define( 'MBRREG_VERSION', '1.2.1' );
 
 /**
  * Plugin base path.
@@ -108,12 +108,22 @@ function mbrreg_init() {
 add_action( 'plugins_loaded', 'mbrreg_init' );
 
 /**
+ * Store the page hook for the My Memberships menu.
+ *
+ * @since 1.2.1
+ * @var string
+ */
+global $mbrreg_my_memberships_hook;
+
+/**
  * Add menu item to WordPress admin bar and dashboard for members.
  *
  * @since 1.1.0
  * @return void
  */
 function mbrreg_add_member_menu() {
+	global $mbrreg_my_memberships_hook;
+
 	// Only for logged-in non-admin users.
 	if ( ! is_user_logged_in() || current_user_can( 'manage_options' ) ) {
 		return;
@@ -128,23 +138,70 @@ function mbrreg_add_member_menu() {
 		return;
 	}
 
-	$page_url = get_permalink( $page_id );
-
-	// Add to admin menu.
-	add_menu_page(
+	// Add to admin menu - render a page that links to the frontend.
+	$mbrreg_my_memberships_hook = add_menu_page(
 		__( 'My Memberships', 'member-registration-plugin' ),
 		__( 'My Memberships', 'member-registration-plugin' ),
 		'read',
 		'mbrreg-my-memberships',
-		function() use ( $page_url ) {
-			wp_safe_redirect( $page_url );
-			exit;
-		},
+		'mbrreg_render_my_memberships_redirect_page',
 		'dashicons-groups',
 		70
 	);
+
+	// Add action to redirect before page loads.
+	add_action( 'load-' . $mbrreg_my_memberships_hook, 'mbrreg_my_memberships_redirect' );
 }
 add_action( 'admin_menu', 'mbrreg_add_member_menu' );
+
+/**
+ * Redirect to frontend member area when My Memberships page loads.
+ *
+ * @since 1.2.1
+ * @return void
+ */
+function mbrreg_my_memberships_redirect() {
+	$page_id = get_option( 'mbrreg_registration_page_id', 0 );
+	if ( ! $page_id ) {
+		$page_id = get_option( 'mbrreg_login_redirect_page', 0 );
+	}
+
+	if ( $page_id ) {
+		$page_url = get_permalink( $page_id );
+		if ( $page_url ) {
+			wp_safe_redirect( $page_url );
+			exit;
+		}
+	}
+}
+
+/**
+ * Render fallback page for My Memberships (in case redirect fails).
+ *
+ * @since 1.2.1
+ * @return void
+ */
+function mbrreg_render_my_memberships_redirect_page() {
+	$page_id = get_option( 'mbrreg_registration_page_id', 0 );
+	if ( ! $page_id ) {
+		$page_id = get_option( 'mbrreg_login_redirect_page', 0 );
+	}
+
+	$page_url = $page_id ? get_permalink( $page_id ) : home_url( '/' );
+	?>
+	<div class="wrap">
+		<h1><?php esc_html_e( 'My Memberships', 'member-registration-plugin' ); ?></h1>
+		<p>
+			<?php esc_html_e( 'Click the button below to access your membership area:', 'member-registration-plugin' ); ?>
+		</p>
+		<p>
+			<a href="<?php echo esc_url( $page_url ); ?>" class="button button-primary button-hero">
+				<?php esc_html_e( 'Go to Member Area', 'member-registration-plugin' ); ?>
+			</a>
+		</p>
+	</div>
+	<?php
+}
 
 /**
  * Redirect members from dashboard to member area.

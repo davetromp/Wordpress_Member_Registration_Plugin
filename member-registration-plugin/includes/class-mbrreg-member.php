@@ -304,19 +304,22 @@ class Mbrreg_Member {
 	 * @param int   $member_id     Member ID.
 	 * @param array $data          Member data.
 	 * @param bool  $is_admin_edit Whether this is an admin edit.
+	 * @param bool  $skip_validation Whether to skip field validation.
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
-	public function update( $member_id, $data, $is_admin_edit = false ) {
+	public function update( $member_id, $data, $is_admin_edit = false, $skip_validation = false ) {
 		$member = $this->database->get_member( $member_id );
 
 		if ( ! $member ) {
 			return new WP_Error( 'member_not_found', __( 'Member not found.', 'member-registration-plugin' ) );
 		}
 
-		// Validate member data.
-		$validation = $this->validate_member_data( $data, true );
-		if ( is_wp_error( $validation ) ) {
-			return $validation;
+		// Validate member data unless explicitly skipped.
+		if ( ! $skip_validation ) {
+			$validation = $this->validate_member_data( $data, true );
+			if ( is_wp_error( $validation ) ) {
+				return $validation;
+			}
 		}
 
 		// Prepare update data.
@@ -334,17 +337,30 @@ class Mbrreg_Member {
 			$update_data['status'] = $data['status'];
 		}
 
-		if ( isset( $data['is_admin'] ) ) {
-			$update_data['is_admin'] = (int) $data['is_admin'];
+		// Track admin status change for capability sync.
+		$old_admin_status     = (int) $member->is_admin;
+		$new_admin_status     = $old_admin_status; // Default to current value.
+		$admin_status_changed = false;
+
+		// Handle is_admin field if it's set in the data.
+		if ( array_key_exists( 'is_admin', $data ) ) {
+			$new_admin_status        = (int) $data['is_admin'];
+			$update_data['is_admin'] = $new_admin_status;
+			$admin_status_changed    = ( $new_admin_status !== $old_admin_status );
 		}
 
-		// Update member.
+		// Update member in database.
 		if ( ! empty( $update_data ) ) {
 			$result = $this->database->update_member( $member_id, $update_data );
 
-			if ( ! $result ) {
+			if ( false === $result ) {
 				return new WP_Error( 'update_failed', __( 'Failed to update member.', 'member-registration-plugin' ) );
 			}
+		}
+
+		// Sync WordPress capabilities if admin status changed.
+		if ( $admin_status_changed ) {
+			$this->sync_user_admin_capability( $member->user_id, $new_admin_status );
 		}
 
 		// Update WordPress user data if email changed (admin only).
@@ -394,6 +410,49 @@ class Mbrreg_Member {
 	}
 
 	/**
+	 * Sync WordPress user admin capability based on member admin status.
+	 *
+	 * This method adds or removes the 'mbrreg_manage_members' capability
+	 * from a WordPress user based on whether any of their members has
+	 * admin status.
+	 *
+	 * @since 1.2.1
+	 * @param int $user_id          WordPress user ID.
+	 * @param int $new_admin_value  The new admin value (1 or 0).
+	 * @return void
+	 */
+	private function sync_user_admin_capability( $user_id, $new_admin_value ) {
+		$user = get_user_by( 'ID', $user_id );
+
+		if ( ! $user ) {
+			return;
+		}
+
+		// If setting to admin, add the capability.
+		if ( $new_admin_value ) {
+			$user->add_cap( 'mbrreg_manage_members' );
+			return;
+		}
+
+		// If removing admin status, check if any other member for this user still has admin.
+		// We need to query the database for fresh data since the update has already happened.
+		$all_members     = $this->database->get_members_by_user_id( $user_id );
+		$has_other_admin = false;
+
+		foreach ( $all_members as $m ) {
+			if ( (int) $m->is_admin === 1 ) {
+				$has_other_admin = true;
+				break;
+			}
+		}
+
+		// Only remove capability if no member has admin status.
+		if ( ! $has_other_admin ) {
+			$user->remove_cap( 'mbrreg_manage_members' );
+		}
+	}
+
+	/**
 	 * Delete a member.
 	 *
 	 * @since 1.0.0
@@ -408,16 +467,23 @@ class Mbrreg_Member {
 			return new WP_Error( 'member_not_found', __( 'Member not found.', 'member-registration-plugin' ) );
 		}
 
-		$user_id = $member->user_id;
+		$user_id   = $member->user_id;
+		$was_admin = (int) $member->is_admin;
 
 		// Check if this is the last member for this user.
 		$member_count = $this->database->count_members_by_user_id( $user_id );
 
-		// Delete member.
+		// Delete member from database.
 		$result = $this->database->delete_member( $member_id );
 
 		if ( ! $result ) {
 			return new WP_Error( 'delete_failed', __( 'Failed to delete member.', 'member-registration-plugin' ) );
+		}
+
+		// If the deleted member was an admin, sync capabilities.
+		// Pass 0 as the new value to trigger the check for other admin members.
+		if ( $was_admin ) {
+			$this->sync_user_admin_capability( $user_id, 0 );
 		}
 
 		// Delete WordPress user if requested and this was the last member.
@@ -440,9 +506,13 @@ class Mbrreg_Member {
 	/**
 	 * Set member as inactive.
 	 *
+	 * This method updates the status directly without validating other fields,
+	 * allowing users to deactivate their membership even if required fields
+	 * are not filled in for this specific action.
+	 *
 	 * @since 1.0.0
 	 * @param int $member_id Member ID.
-	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 * @return array|WP_Error Result array on success, WP_Error on failure.
 	 */
 	public function set_inactive( $member_id ) {
 		$member = $this->database->get_member( $member_id );
@@ -451,32 +521,66 @@ class Mbrreg_Member {
 			return new WP_Error( 'member_not_found', __( 'Member not found.', 'member-registration-plugin' ) );
 		}
 
-		$result = $this->update( $member_id, array( 'status' => 'inactive' ) );
+		// Update status directly in database (bypass validation).
+		$result = $this->database->update_member( $member_id, array( 'status' => 'inactive' ) );
 
-		if ( is_wp_error( $result ) ) {
-			return $result;
+		if ( false === $result ) {
+			return new WP_Error( 'update_failed', __( 'Failed to deactivate membership.', 'member-registration-plugin' ) );
 		}
 
 		// Check if this was the last active member for the user.
 		$active_count = $this->database->count_members_by_user_id( $member->user_id, 'active' );
 
+		/**
+		 * Fires after a member is set to inactive.
+		 *
+		 * @since 1.2.1
+		 * @param int $member_id Member ID.
+		 * @param int $user_id   WordPress user ID.
+		 */
+		do_action( 'mbrreg_member_deactivated', $member_id, $member->user_id );
+
 		// Return whether user should be logged out (no more active members).
 		return array(
-			'success'       => true,
-			'logout_user'   => ( 0 === $active_count ),
-			'active_count'  => $active_count,
+			'success'      => true,
+			'logout_user'  => ( 0 === $active_count ),
+			'active_count' => $active_count,
 		);
 	}
 
 	/**
 	 * Set member as active.
 	 *
+	 * This method updates the status directly without validating other fields.
+	 *
 	 * @since 1.0.0
 	 * @param int $member_id Member ID.
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
 	public function set_active( $member_id ) {
-		return $this->update( $member_id, array( 'status' => 'active' ) );
+		$member = $this->database->get_member( $member_id );
+
+		if ( ! $member ) {
+			return new WP_Error( 'member_not_found', __( 'Member not found.', 'member-registration-plugin' ) );
+		}
+
+		// Update status directly in database (bypass validation).
+		$result = $this->database->update_member( $member_id, array( 'status' => 'active' ) );
+
+		if ( false === $result ) {
+			return new WP_Error( 'update_failed', __( 'Failed to activate membership.', 'member-registration-plugin' ) );
+		}
+
+		/**
+		 * Fires after a member is set to active.
+		 *
+		 * @since 1.2.1
+		 * @param int $member_id Member ID.
+		 * @param int $user_id   WordPress user ID.
+		 */
+		do_action( 'mbrreg_member_reactivated', $member_id, $member->user_id );
+
+		return true;
 	}
 
 	/**
@@ -494,20 +598,19 @@ class Mbrreg_Member {
 			return new WP_Error( 'member_not_found', __( 'Member not found.', 'member-registration-plugin' ) );
 		}
 
-		$result = $this->database->update_member( $member_id, array( 'is_admin' => (int) $is_admin ) );
+		$new_admin_value = $is_admin ? 1 : 0;
+		$old_admin_value = (int) $member->is_admin;
 
-		if ( ! $result ) {
+		// Update the database.
+		$result = $this->database->update_member( $member_id, array( 'is_admin' => $new_admin_value ) );
+
+		if ( false === $result ) {
 			return new WP_Error( 'update_failed', __( 'Failed to update member admin status.', 'member-registration-plugin' ) );
 		}
 
-		// Update WordPress user capabilities.
-		$user = get_user_by( 'ID', $member->user_id );
-		if ( $user ) {
-			if ( $is_admin ) {
-				$user->add_cap( 'mbrreg_manage_members' );
-			} else {
-				$user->remove_cap( 'mbrreg_manage_members' );
-			}
+		// Sync WordPress user capabilities if the status changed.
+		if ( $new_admin_value !== $old_admin_value ) {
+			$this->sync_user_admin_capability( $member->user_id, $new_admin_value );
 		}
 
 		return true;
@@ -714,13 +817,9 @@ class Mbrreg_Member {
 			return true;
 		}
 
-		// Check if user is a member admin.
-		$members = $this->database->get_members_by_user_id( $user_id );
-
-		foreach ( $members as $member ) {
-			if ( $member->is_admin ) {
-				return true;
-			}
+		// Check if user has the capability (this is the authoritative check).
+		if ( user_can( $user_id, 'mbrreg_manage_members' ) ) {
+			return true;
 		}
 
 		return false;
