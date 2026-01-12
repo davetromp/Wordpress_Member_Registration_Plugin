@@ -8,7 +8,7 @@
  */
 
 // If this file is called directly, abort.
-if ( ! defined( 'WPINC' ) ) {
+if (!defined('WPINC')) {
 	die;
 }
 
@@ -19,7 +19,8 @@ if ( ! defined( 'WPINC' ) ) {
  *
  * @since 1.0.0
  */
-class Mbrreg_Database {
+class Mbrreg_Database
+{
 
 	/**
 	 * WordPress database object.
@@ -42,9 +43,10 @@ class Mbrreg_Database {
 	 *
 	 * @since 1.0.0
 	 */
-	public function __construct() {
+	public function __construct()
+	{
 		global $wpdb;
-		$this->wpdb         = $wpdb;
+		$this->wpdb = $wpdb;
 		$this->table_prefix = $wpdb->prefix . MBRREG_TABLE_PREFIX;
 	}
 
@@ -54,7 +56,8 @@ class Mbrreg_Database {
 	 * @since 1.0.0
 	 * @return string
 	 */
-	public function get_members_table() {
+	public function get_members_table()
+	{
 		return $this->table_prefix . 'members';
 	}
 
@@ -64,7 +67,8 @@ class Mbrreg_Database {
 	 * @since 1.0.0
 	 * @return string
 	 */
-	public function get_custom_fields_table() {
+	public function get_custom_fields_table()
+	{
 		return $this->table_prefix . 'custom_fields';
 	}
 
@@ -74,7 +78,8 @@ class Mbrreg_Database {
 	 * @since 1.0.0
 	 * @return string
 	 */
-	public function get_member_meta_table() {
+	public function get_member_meta_table()
+	{
 		return $this->table_prefix . 'member_meta';
 	}
 
@@ -85,35 +90,36 @@ class Mbrreg_Database {
 	 * @param array $data Member data.
 	 * @return int|false The member ID on success, false on failure.
 	 */
-	public function insert_member( $data ) {
+	public function insert_member($data)
+	{
 		$defaults = array(
-			'user_id'        => 0,
-			'first_name'     => '',
-			'last_name'      => '',
-			'status'         => 'pending',
-			'is_admin'       => 0,
+			'user_id' => 0,
+			'first_name' => '',
+			'last_name' => '',
+			'status' => 'pending',
+			'is_admin' => 0,
 			'activation_key' => '',
 		);
 
-		$data = wp_parse_args( $data, $defaults );
+		$data = wp_parse_args($data, $defaults);
 
 		// Only use the fields that exist in the simplified table.
 		$insert_data = array(
-			'user_id'        => $data['user_id'],
-			'first_name'     => $data['first_name'],
-			'last_name'      => $data['last_name'],
-			'status'         => $data['status'],
-			'is_admin'       => $data['is_admin'],
+			'user_id' => $data['user_id'],
+			'first_name' => $data['first_name'],
+			'last_name' => $data['last_name'],
+			'status' => $data['status'],
+			'is_admin' => $data['is_admin'],
 			'activation_key' => $data['activation_key'],
 		);
 
 		$result = $this->wpdb->insert(
 			$this->get_members_table(),
 			$insert_data,
-			array( '%d', '%s', '%s', '%s', '%d', '%s' )
+			array('%d', '%s', '%s', '%s', '%d', '%s')
 		);
 
-		if ( false === $result ) {
+		if (false === $result) {
 			return false;
 		}
 
@@ -128,27 +134,28 @@ class Mbrreg_Database {
 	 * @param array $data      Member data to update.
 	 * @return bool True on success, false on failure.
 	 */
-	public function update_member( $member_id, $data ) {
+	public function update_member($member_id, $data)
+	{
 		// Filter out any fields that don't exist in the table.
-		$allowed_fields = array( 'first_name', 'last_name', 'status', 'is_admin', 'activation_key' );
-		$update_data    = array();
+		$allowed_fields = array('first_name', 'last_name', 'status', 'is_admin', 'activation_key');
+		$update_data = array();
 
-		foreach ( $data as $key => $value ) {
-			if ( in_array( $key, $allowed_fields, true ) ) {
-				$update_data[ $key ] = $value;
+		foreach ($data as $key => $value) {
+			if (in_array($key, $allowed_fields, true)) {
+				$update_data[$key] = $value;
 			}
 		}
 
-		if ( empty( $update_data ) ) {
+		if (empty($update_data)) {
 			return true;
 		}
 
 		$result = $this->wpdb->update(
 			$this->get_members_table(),
 			$update_data,
-			array( 'id' => $member_id ),
+			array('id' => $member_id),
 			null,
-			array( '%d' )
+			array('%d')
 		);
 
 		return false !== $result;
@@ -161,19 +168,20 @@ class Mbrreg_Database {
 	 * @param int $member_id Member ID.
 	 * @return bool True on success, false on failure.
 	 */
-	public function delete_member( $member_id ) {
+	public function delete_member($member_id)
+	{
 		// Delete member meta first.
 		$this->wpdb->delete(
 			$this->get_member_meta_table(),
-			array( 'member_id' => $member_id ),
-			array( '%d' )
+			array('member_id' => $member_id),
+			array('%d')
 		);
 
 		// Delete member.
 		$result = $this->wpdb->delete(
 			$this->get_members_table(),
-			array( 'id' => $member_id ),
-			array( '%d' )
+			array('id' => $member_id),
+			array('%d')
 		);
 
 		return false !== $result;
@@ -186,13 +194,15 @@ class Mbrreg_Database {
 	 * @param int $member_id Member ID.
 	 * @return object|null Member object or null if not found.
 	 */
-	public function get_member( $member_id ) {
+	public function get_member($member_id)
+	{
 		$sql = $this->wpdb->prepare(
 			"SELECT * FROM {$this->get_members_table()} WHERE id = %d",
 			$member_id
 		);
 
-		return $this->wpdb->get_row( $sql );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return $this->wpdb->get_row($sql);
 	}
 
 	/**
@@ -202,13 +212,15 @@ class Mbrreg_Database {
 	 * @param int $user_id WordPress user ID.
 	 * @return object|null Member object or null if not found.
 	 */
-	public function get_member_by_user_id( $user_id ) {
+	public function get_member_by_user_id($user_id)
+	{
 		$sql = $this->wpdb->prepare(
 			"SELECT * FROM {$this->get_members_table()} WHERE user_id = %d ORDER BY id ASC LIMIT 1",
 			$user_id
 		);
 
-		return $this->wpdb->get_row( $sql );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return $this->wpdb->get_row($sql);
 	}
 
 	/**
@@ -218,13 +230,15 @@ class Mbrreg_Database {
 	 * @param int $user_id WordPress user ID.
 	 * @return array Array of member objects.
 	 */
-	public function get_members_by_user_id( $user_id ) {
+	public function get_members_by_user_id($user_id)
+	{
 		$sql = $this->wpdb->prepare(
 			"SELECT * FROM {$this->get_members_table()} WHERE user_id = %d ORDER BY id ASC",
 			$user_id
 		);
 
-		return $this->wpdb->get_results( $sql );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return $this->wpdb->get_results($sql);
 	}
 
 	/**
@@ -235,17 +249,18 @@ class Mbrreg_Database {
 	 * @param string $status  Optional status filter.
 	 * @return int Number of members.
 	 */
-	public function count_members_by_user_id( $user_id, $status = '' ) {
+	public function count_members_by_user_id($user_id, $status = '')
+	{
 		$sql = $this->wpdb->prepare(
 			"SELECT COUNT(*) FROM {$this->get_members_table()} WHERE user_id = %d",
 			$user_id
 		);
 
-		if ( ! empty( $status ) ) {
-			$sql .= $this->wpdb->prepare( ' AND status = %s', $status );
+		if (!empty($status)) {
+			$sql .= $this->wpdb->prepare(' AND status = %s', $status);
 		}
-
-		return (int) $this->wpdb->get_var( $sql );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return (int) $this->wpdb->get_var($sql);
 	}
 
 	/**
@@ -255,13 +270,15 @@ class Mbrreg_Database {
 	 * @param string $activation_key Activation key.
 	 * @return object|null Member object or null if not found.
 	 */
-	public function get_member_by_activation_key( $activation_key ) {
+	public function get_member_by_activation_key($activation_key)
+	{
 		$sql = $this->wpdb->prepare(
 			"SELECT * FROM {$this->get_members_table()} WHERE activation_key = %s",
 			$activation_key
 		);
 
-		return $this->wpdb->get_row( $sql );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return $this->wpdb->get_row($sql);
 	}
 
 	/**
@@ -271,63 +288,66 @@ class Mbrreg_Database {
 	 * @param array $args Query arguments.
 	 * @return array Array of member objects.
 	 */
-	public function get_members( $args = array() ) {
+	public function get_members($args = array())
+	{
 		$defaults = array(
-			'status'   => '',
+			'status' => '',
 			'is_admin' => null,
-			'search'   => '',
-			'user_id'  => null,
-			'orderby'  => 'created_at',
-			'order'    => 'DESC',
-			'limit'    => -1,
-			'offset'   => 0,
+			'search' => '',
+			'user_id' => null,
+			'orderby' => 'created_at',
+			'order' => 'DESC',
+			'limit' => -1,
+			'offset' => 0,
 		);
 
-		$args = wp_parse_args( $args, $defaults );
+		$args = wp_parse_args($args, $defaults);
 
-		$where_clauses = array( '1=1' );
-		$where_values  = array();
+		$where_clauses = array('1=1');
+		$where_values = array();
 
-		if ( ! empty( $args['status'] ) ) {
+		if (!empty($args['status'])) {
 			$where_clauses[] = 'status = %s';
-			$where_values[]  = $args['status'];
+			$where_values[] = $args['status'];
 		}
 
-		if ( null !== $args['is_admin'] ) {
+		if (null !== $args['is_admin']) {
 			$where_clauses[] = 'is_admin = %d';
-			$where_values[]  = (int) $args['is_admin'];
+			$where_values[] = (int) $args['is_admin'];
 		}
 
-		if ( null !== $args['user_id'] ) {
+		if (null !== $args['user_id']) {
 			$where_clauses[] = 'user_id = %d';
-			$where_values[]  = (int) $args['user_id'];
+			$where_values[] = (int) $args['user_id'];
 		}
 
-		if ( ! empty( $args['search'] ) ) {
-			$search_term     = '%' . $this->wpdb->esc_like( $args['search'] ) . '%';
+		if (!empty($args['search'])) {
+			$search_term = '%' . $this->wpdb->esc_like($args['search']) . '%';
 			$where_clauses[] = '(first_name LIKE %s OR last_name LIKE %s)';
-			$where_values[]  = $search_term;
-			$where_values[]  = $search_term;
+			$where_values[] = $search_term;
+			$where_values[] = $search_term;
 		}
 
-		$where_sql = implode( ' AND ', $where_clauses );
+		$where_sql = implode(' AND ', $where_clauses);
 
 		// Sanitize orderby.
-		$allowed_orderby = array( 'id', 'first_name', 'last_name', 'status', 'created_at', 'updated_at' );
-		$orderby         = in_array( $args['orderby'], $allowed_orderby, true ) ? $args['orderby'] : 'created_at';
-		$order           = 'ASC' === strtoupper( $args['order'] ) ? 'ASC' : 'DESC';
+		$allowed_orderby = array('id', 'first_name', 'last_name', 'status', 'created_at', 'updated_at');
+		$orderby = in_array($args['orderby'], $allowed_orderby, true) ? $args['orderby'] : 'created_at';
+		$order = 'ASC' === strtoupper($args['order']) ? 'ASC' : 'DESC';
 
 		$sql = "SELECT * FROM {$this->get_members_table()} WHERE {$where_sql} ORDER BY {$orderby} {$order}";
 
-		if ( $args['limit'] > 0 ) {
-			$sql .= $this->wpdb->prepare( ' LIMIT %d OFFSET %d', $args['limit'], $args['offset'] );
+		if ($args['limit'] > 0) {
+			$sql .= $this->wpdb->prepare(' LIMIT %d OFFSET %d', $args['limit'], $args['offset']);
 		}
 
-		if ( ! empty( $where_values ) ) {
-			$sql = $this->wpdb->prepare( $sql, $where_values ); // phpcs:ignore
+		if (!empty($where_values)) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$sql = $this->wpdb->prepare($sql, $where_values);
 		}
 
-		return $this->wpdb->get_results( $sql );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return $this->wpdb->get_results($sql);
 	}
 
 	/**
@@ -337,50 +357,53 @@ class Mbrreg_Database {
 	 * @param array $args Query arguments.
 	 * @return int Number of members.
 	 */
-	public function count_members( $args = array() ) {
+	public function count_members($args = array())
+	{
 		$defaults = array(
-			'status'   => '',
+			'status' => '',
 			'is_admin' => null,
-			'search'   => '',
-			'user_id'  => null,
+			'search' => '',
+			'user_id' => null,
 		);
 
-		$args = wp_parse_args( $args, $defaults );
+		$args = wp_parse_args($args, $defaults);
 
-		$where_clauses = array( '1=1' );
-		$where_values  = array();
+		$where_clauses = array('1=1');
+		$where_values = array();
 
-		if ( ! empty( $args['status'] ) ) {
+		if (!empty($args['status'])) {
 			$where_clauses[] = 'status = %s';
-			$where_values[]  = $args['status'];
+			$where_values[] = $args['status'];
 		}
 
-		if ( null !== $args['is_admin'] ) {
+		if (null !== $args['is_admin']) {
 			$where_clauses[] = 'is_admin = %d';
-			$where_values[]  = (int) $args['is_admin'];
+			$where_values[] = (int) $args['is_admin'];
 		}
 
-		if ( null !== $args['user_id'] ) {
+		if (null !== $args['user_id']) {
 			$where_clauses[] = 'user_id = %d';
-			$where_values[]  = (int) $args['user_id'];
+			$where_values[] = (int) $args['user_id'];
 		}
 
-		if ( ! empty( $args['search'] ) ) {
-			$search_term     = '%' . $this->wpdb->esc_like( $args['search'] ) . '%';
+		if (!empty($args['search'])) {
+			$search_term = '%' . $this->wpdb->esc_like($args['search']) . '%';
 			$where_clauses[] = '(first_name LIKE %s OR last_name LIKE %s)';
-			$where_values[]  = $search_term;
-			$where_values[]  = $search_term;
+			$where_values[] = $search_term;
+			$where_values[] = $search_term;
 		}
 
-		$where_sql = implode( ' AND ', $where_clauses );
+		$where_sql = implode(' AND ', $where_clauses);
 
 		$sql = "SELECT COUNT(*) FROM {$this->get_members_table()} WHERE {$where_sql}";
 
-		if ( ! empty( $where_values ) ) {
-			$sql = $this->wpdb->prepare( $sql, $where_values ); // phpcs:ignore
+		if (!empty($where_values)) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$sql = $this->wpdb->prepare($sql, $where_values);
 		}
 
-		return (int) $this->wpdb->get_var( $sql );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return (int) $this->wpdb->get_var($sql);
 	}
 
 	/**
@@ -392,18 +415,19 @@ class Mbrreg_Database {
 	 * @param string $value     Meta value.
 	 * @return int|false The meta ID on success, false on failure.
 	 */
-	public function insert_member_meta( $member_id, $field_id, $value ) {
+	public function insert_member_meta($member_id, $field_id, $value)
+	{
 		$result = $this->wpdb->insert(
 			$this->get_member_meta_table(),
 			array(
-				'member_id'  => $member_id,
-				'field_id'   => $field_id,
+				'member_id' => $member_id,
+				'field_id' => $field_id,
 				'meta_value' => $value,
 			),
-			array( '%d', '%d', '%s' )
+			array('%d', '%d', '%s')
 		);
 
-		if ( false === $result ) {
+		if (false === $result) {
 			return false;
 		}
 
@@ -419,23 +443,24 @@ class Mbrreg_Database {
 	 * @param string $value     Meta value.
 	 * @return bool True on success, false on failure.
 	 */
-	public function update_member_meta( $member_id, $field_id, $value ) {
+	public function update_member_meta($member_id, $field_id, $value)
+	{
 		// Check if meta exists.
-		$existing = $this->get_member_meta( $member_id, $field_id );
+		$existing = $this->get_member_meta($member_id, $field_id);
 
-		if ( null !== $existing ) {
+		if (null !== $existing) {
 			$result = $this->wpdb->update(
 				$this->get_member_meta_table(),
-				array( 'meta_value' => $value ),
+				array('meta_value' => $value),
 				array(
 					'member_id' => $member_id,
-					'field_id'  => $field_id,
+					'field_id' => $field_id,
 				),
-				array( '%s' ),
-				array( '%d', '%d' )
+				array('%s'),
+				array('%d', '%d')
 			);
 		} else {
-			$result = $this->insert_member_meta( $member_id, $field_id, $value );
+			$result = $this->insert_member_meta($member_id, $field_id, $value);
 		}
 
 		return false !== $result;
@@ -449,15 +474,17 @@ class Mbrreg_Database {
 	 * @param int $field_id  Custom field ID (optional).
 	 * @return mixed Single value, array of values, or null.
 	 */
-	public function get_member_meta( $member_id, $field_id = null ) {
-		if ( null !== $field_id ) {
+	public function get_member_meta($member_id, $field_id = null)
+	{
+		if (null !== $field_id) {
 			$sql = $this->wpdb->prepare(
 				"SELECT meta_value FROM {$this->get_member_meta_table()} WHERE member_id = %d AND field_id = %d",
 				$member_id,
 				$field_id
 			);
 
-			return $this->wpdb->get_var( $sql );
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			return $this->wpdb->get_var($sql);
 		}
 
 		$sql = $this->wpdb->prepare(
@@ -465,11 +492,12 @@ class Mbrreg_Database {
 			$member_id
 		);
 
-		$results = $this->wpdb->get_results( $sql );
-		$meta    = array();
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$results = $this->wpdb->get_results($sql);
+		$meta = array();
 
-		foreach ( $results as $row ) {
-			$meta[ $row->field_id ] = $row->meta_value;
+		foreach ($results as $row) {
+			$meta[$row->field_id] = $row->meta_value;
 		}
 
 		return $meta;
@@ -483,13 +511,14 @@ class Mbrreg_Database {
 	 * @param int $field_id  Custom field ID (optional).
 	 * @return bool True on success, false on failure.
 	 */
-	public function delete_member_meta( $member_id, $field_id = null ) {
-		$where        = array( 'member_id' => $member_id );
-		$where_format = array( '%d' );
+	public function delete_member_meta($member_id, $field_id = null)
+	{
+		$where = array('member_id' => $member_id);
+		$where_format = array('%d');
 
-		if ( null !== $field_id ) {
+		if (null !== $field_id) {
 			$where['field_id'] = $field_id;
-			$where_format[]    = '%d';
+			$where_format[] = '%d';
 		}
 
 		$result = $this->wpdb->delete(
@@ -508,26 +537,27 @@ class Mbrreg_Database {
 	 * @param array $data Field data.
 	 * @return int|false The field ID on success, false on failure.
 	 */
-	public function insert_custom_field( $data ) {
+	public function insert_custom_field($data)
+	{
 		$defaults = array(
-			'field_name'    => '',
-			'field_label'   => '',
-			'field_type'    => 'text',
+			'field_name' => '',
+			'field_label' => '',
+			'field_type' => 'text',
 			'field_options' => '',
-			'is_required'   => 0,
+			'is_required' => 0,
 			'is_admin_only' => 0,
-			'field_order'   => 0,
+			'field_order' => 0,
 		);
 
-		$data = wp_parse_args( $data, $defaults );
+		$data = wp_parse_args($data, $defaults);
 
 		$result = $this->wpdb->insert(
 			$this->get_custom_fields_table(),
 			$data,
-			array( '%s', '%s', '%s', '%s', '%d', '%d', '%d' )
+			array('%s', '%s', '%s', '%s', '%d', '%d', '%d')
 		);
 
-		if ( false === $result ) {
+		if (false === $result) {
 			return false;
 		}
 
@@ -542,13 +572,14 @@ class Mbrreg_Database {
 	 * @param array $data     Field data to update.
 	 * @return bool True on success, false on failure.
 	 */
-	public function update_custom_field( $field_id, $data ) {
+	public function update_custom_field($field_id, $data)
+	{
 		$result = $this->wpdb->update(
 			$this->get_custom_fields_table(),
 			$data,
-			array( 'id' => $field_id ),
+			array('id' => $field_id),
 			null,
-			array( '%d' )
+			array('%d')
 		);
 
 		return false !== $result;
@@ -561,19 +592,20 @@ class Mbrreg_Database {
 	 * @param int $field_id Field ID.
 	 * @return bool True on success, false on failure.
 	 */
-	public function delete_custom_field( $field_id ) {
+	public function delete_custom_field($field_id)
+	{
 		// Delete associated member meta.
 		$this->wpdb->delete(
 			$this->get_member_meta_table(),
-			array( 'field_id' => $field_id ),
-			array( '%d' )
+			array('field_id' => $field_id),
+			array('%d')
 		);
 
 		// Delete field.
 		$result = $this->wpdb->delete(
 			$this->get_custom_fields_table(),
-			array( 'id' => $field_id ),
-			array( '%d' )
+			array('id' => $field_id),
+			array('%d')
 		);
 
 		return false !== $result;
@@ -586,13 +618,15 @@ class Mbrreg_Database {
 	 * @param int $field_id Field ID.
 	 * @return object|null Field object or null if not found.
 	 */
-	public function get_custom_field( $field_id ) {
+	public function get_custom_field($field_id)
+	{
 		$sql = $this->wpdb->prepare(
 			"SELECT * FROM {$this->get_custom_fields_table()} WHERE id = %d",
 			$field_id
 		);
 
-		return $this->wpdb->get_row( $sql );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return $this->wpdb->get_row($sql);
 	}
 
 	/**
@@ -602,16 +636,17 @@ class Mbrreg_Database {
 	 * @param bool $include_admin_only Whether to include admin-only fields.
 	 * @return array Array of field objects.
 	 */
-	public function get_custom_fields( $include_admin_only = true ) {
+	public function get_custom_fields($include_admin_only = true)
+	{
 		$sql = "SELECT * FROM {$this->get_custom_fields_table()}";
 
-		if ( ! $include_admin_only ) {
+		if (!$include_admin_only) {
 			$sql .= ' WHERE is_admin_only = 0';
 		}
 
 		$sql .= ' ORDER BY field_order ASC, id ASC';
-
-		return $this->wpdb->get_results( $sql );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return $this->wpdb->get_results($sql);
 	}
 
 	/**
@@ -621,8 +656,9 @@ class Mbrreg_Database {
 	 * @param string $email Email address.
 	 * @return int|false User ID if exists, false otherwise.
 	 */
-	public function email_exists( $email ) {
-		return email_exists( $email );
+	public function email_exists($email)
+	{
+		return email_exists($email);
 	}
 
 	/**
@@ -632,7 +668,8 @@ class Mbrreg_Database {
 	 * @param string $email Email address.
 	 * @return WP_User|false User object if exists, false otherwise.
 	 */
-	public function get_user_by_email( $email ) {
-		return get_user_by( 'email', $email );
+	public function get_user_by_email($email)
+	{
+		return get_user_by('email', $email);
 	}
 }
