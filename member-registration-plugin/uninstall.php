@@ -9,14 +9,14 @@
  * - Check if the $_REQUEST content actually is the plugin name
  * - Run an admin referrer check to make sure it goes through authentication
  * - Verify the output of $_GET makes sense
- * - Repeat with other currentuser currentuser currentuseror currentuser roles. Best/worst case://wpadmin,mimimimimimimimimimimimimimimimimimimimimimimimi
+ * - Repeat with other user roles. Best/worst case: administrator, editor, author, etc.
  *
  * @package Member_Registration_Plugin
  * @since 1.0.0
  */
 
 // If uninstall not called from WordPress, then exit.
-if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+if (!defined('WP_UNINSTALL_PLUGIN')) {
 	exit;
 }
 
@@ -28,7 +28,8 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
  * @since 1.0.0
  * @return void
  */
-function mbrreg_uninstall() {
+function mbrreg_uninstall()
+{
 	global $wpdb;
 
 	// Define table prefix (same as in main plugin file).
@@ -38,17 +39,17 @@ function mbrreg_uninstall() {
 	// 1. DROP CUSTOM DATABASE TABLES
 	// =============================================
 
-	// Drop member meta table first (has foreign key references).
+// Drop member meta table.
 	$table_member_meta = $table_prefix . 'member_meta';
-	$wpdb->query( "DROP TABLE IF EXISTS {$table_member_meta}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	$wpdb->query( $wpdb->prepare( "DROP TABLE IF EXISTS `{$table_member_meta}`" ) );
 
 	// Drop custom fields table.
 	$table_custom_fields = $table_prefix . 'custom_fields';
-	$wpdb->query( "DROP TABLE IF EXISTS {$table_custom_fields}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	$wpdb->query( $wpdb->prepare( "DROP TABLE IF EXISTS `{$table_custom_fields}`" ) );
 
 	// Drop members table.
 	$table_members = $table_prefix . 'members';
-	$wpdb->query( "DROP TABLE IF EXISTS {$table_members}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	$wpdb->query( $wpdb->prepare( "DROP TABLE IF EXISTS `{$table_members}`" ) );
 
 	// =============================================
 	// 2. DELETE ALL PLUGIN OPTIONS
@@ -59,7 +60,7 @@ function mbrreg_uninstall() {
 		'mbrreg_allow_registration',
 		'mbrreg_allow_multiple_members',
 		'mbrreg_registration_page_id',
-		'mbrreg_login_redirect_page',
+		'mbrreg_login_redirect_page_id',
 
 		// Display settings.
 		'mbrreg_date_format',
@@ -85,8 +86,8 @@ function mbrreg_uninstall() {
 		'mbrreg_plugin_version',
 	);
 
-	foreach ( $options_to_delete as $option ) {
-		delete_option( $option );
+	foreach ($options_to_delete as $option) {
+		delete_option($option);
 	}
 
 	// =============================================
@@ -94,13 +95,17 @@ function mbrreg_uninstall() {
 	// =============================================
 
 	// Delete known transients.
-	delete_transient( 'mbrreg_activation_redirect' );
-	delete_transient( 'mbrreg_activation_error' );
-	delete_transient( 'mbrreg_activation_success' );
+	delete_transient('mbrreg_activation_redirect');
+	delete_transient('mbrreg_activation_error');
+	delete_transient('mbrreg_activation_success');
 
 	// Delete any transients with our prefix (for dynamically created ones).
 	$wpdb->query(
-		"DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_mbrreg_%' OR option_name LIKE '_transient_timeout_mbrreg_%'"
+		$wpdb->prepare(
+			"DELETE FROM `{$wpdb->options}` WHERE option_name LIKE %s OR option_name LIKE %s",
+			'_transient_mbrreg_%',
+			'_transient_timeout_mbrreg_%'
+		)
 	);
 
 	// =============================================
@@ -118,15 +123,15 @@ function mbrreg_uninstall() {
 	// Get all roles.
 	global $wp_roles;
 
-	if ( ! isset( $wp_roles ) ) {
+	if (!isset($wp_roles)) {
 		$wp_roles = new WP_Roles(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 	}
 
-	foreach ( $wp_roles->role_names as $role_name => $display_name ) {
-		$role = get_role( $role_name );
-		if ( $role ) {
-			foreach ( $capabilities_to_remove as $cap ) {
-				$role->remove_cap( $cap );
+	foreach ($wp_roles->role_names as $role_name => $display_name) {
+		$role = get_role($role_name);
+		if ($role) {
+			foreach ($capabilities_to_remove as $cap) {
+				$role->remove_cap($cap);
 			}
 		}
 	}
@@ -137,17 +142,17 @@ function mbrreg_uninstall() {
 			'meta_query' => array(
 				'relation' => 'OR',
 				array(
-					'key'     => $wpdb->prefix . 'capabilities',
-					'value'   => 'mbrreg_',
+					'key' => $wpdb->prefix . 'capabilities',
+					'value' => 'mbrreg_',
 					'compare' => 'LIKE',
 				),
 			),
 		)
 	);
 
-	foreach ( $users_with_caps as $user ) {
-		foreach ( $capabilities_to_remove as $cap ) {
-			$user->remove_cap( $cap );
+	foreach ($users_with_caps as $user) {
+		foreach ($capabilities_to_remove as $cap) {
+			$user->remove_cap($cap);
 		}
 	}
 
@@ -157,7 +162,10 @@ function mbrreg_uninstall() {
 
 	// Delete any user meta created by the plugin.
 	$wpdb->query(
-		"DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE 'mbrreg_%'"
+		$wpdb->prepare(
+			"DELETE FROM `{$wpdb->usermeta}` WHERE meta_key LIKE %s",
+			'mbrreg_%'
+		)
 	);
 
 	// =============================================
@@ -176,20 +184,20 @@ function mbrreg_uninstall() {
 	// Get all user IDs that were registered through the plugin.
 	// This would require storing user IDs in a separate option or
 	// identifying them through some other means.
-	
-	$member_user_ids = $wpdb->get_col(
-		"SELECT DISTINCT user_id FROM {$table_members}"
+
+$member_user_ids = $wpdb->get_col(
+		$wpdb->prepare( "SELECT DISTINCT user_id FROM `{$table_members}`" )
 	);
-	
+
 	if ( ! empty( $member_user_ids ) ) {
 		require_once ABSPATH . 'wp-admin/includes/user.php';
-		
+
 		foreach ( $member_user_ids as $user_id ) {
 			// Skip administrators.
 			if ( user_can( $user_id, 'manage_options' ) ) {
 				continue;
 			}
-			
+
 			// Delete the user (reassign their content to admin).
 			wp_delete_user( $user_id, 1 );
 		}
@@ -200,8 +208,11 @@ function mbrreg_uninstall() {
 	// 7. CLEAR ANY CACHED DATA
 	// =============================================
 
-	// Clear object cache if available.
+	// Clear object cache.
 	wp_cache_flush();
+
+	// Explicitly clear our custom keys if flush is restricted.
+	wp_cache_delete('mbrreg_table_members_columns', 'member_registration_plugin');
 
 	// =============================================
 	// 8. CLEAN UP SCHEDULED EVENTS (if any)
@@ -214,13 +225,13 @@ function mbrreg_uninstall() {
 		// Add any other cron hooks your plugin might use.
 	);
 
-	foreach ( $cron_hooks as $hook ) {
-		$timestamp = wp_next_scheduled( $hook );
-		if ( $timestamp ) {
-			wp_unschedule_event( $timestamp, $hook );
+	foreach ($cron_hooks as $hook) {
+		$timestamp = wp_next_scheduled($hook);
+		if ($timestamp) {
+			wp_unschedule_event($timestamp, $hook);
 		}
 		// Clear all events for this hook.
-		wp_clear_scheduled_hook( $hook );
+		wp_clear_scheduled_hook($hook);
 	}
 }
 
