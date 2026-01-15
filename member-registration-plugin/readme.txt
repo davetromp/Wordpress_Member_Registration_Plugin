@@ -4,7 +4,7 @@ Donate link: https://dtntmedia.com/donate
 Tags: members, registration, membership, user management
 Requires at least: 5.0
 Tested up to: 6.9
-Stable tag: 1.2.1
+Stable tag: 1.2.3
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -88,6 +88,9 @@ Yes! The plugin is fully translatable and includes a Dutch translation. You can 
 6. Plugin settings
 
 == Changelog ==
+
+= 1.2.3 =
+1. Fix: fixed error that the wp plugin checker found 
 
 = 1.2.2 =
 1. Fix: Membership deactivation by user not working, if there are any required fields
