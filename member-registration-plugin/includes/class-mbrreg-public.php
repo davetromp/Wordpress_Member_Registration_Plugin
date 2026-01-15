@@ -8,7 +8,7 @@
  */
 
 // If this file is called directly, abort.
-if ( ! defined( 'WPINC' ) ) {
+if (!defined('WPINC')) {
 	die;
 }
 
@@ -19,7 +19,8 @@ if ( ! defined( 'WPINC' ) ) {
  *
  * @since 1.0.0
  */
-class Mbrreg_Public {
+class Mbrreg_Public
+{
 
 	/**
 	 * Member instance.
@@ -35,7 +36,8 @@ class Mbrreg_Public {
 	 * @since 1.0.0
 	 * @param Mbrreg_Member $member Member instance.
 	 */
-	public function __construct( Mbrreg_Member $member ) {
+	public function __construct(Mbrreg_Member $member)
+	{
 		$this->member = $member;
 	}
 
@@ -45,9 +47,10 @@ class Mbrreg_Public {
 	 * @since 1.0.0
 	 * @return void
 	 */
-	public function init() {
-		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
-		add_action( 'init', array( $this, 'handle_activation' ) );
+	public function init()
+	{
+		add_action('wp_enqueue_scripts', array($this, 'enqueue_assets'));
+		add_action('init', array($this, 'handle_activation'));
 	}
 
 	/**
@@ -56,7 +59,8 @@ class Mbrreg_Public {
 	 * @since 1.0.0
 	 * @return void
 	 */
-	public function enqueue_assets() {
+	public function enqueue_assets()
+	{
 		wp_enqueue_style(
 			'mbrreg-public',
 			MBRREG_PLUGIN_URL . 'public/css/mbrreg-public.css',
@@ -67,7 +71,7 @@ class Mbrreg_Public {
 		wp_enqueue_script(
 			'mbrreg-public',
 			MBRREG_PLUGIN_URL . 'public/js/mbrreg-public.js',
-			array( 'jquery' ),
+			array('jquery'),
 			MBRREG_VERSION,
 			true
 		);
@@ -76,22 +80,22 @@ class Mbrreg_Public {
 			'mbrreg-public',
 			'mbrregPublic',
 			array(
-				'ajaxUrl'                => admin_url( 'admin-ajax.php' ),
-				'registerNonce'          => wp_create_nonce( 'mbrreg_register_nonce' ),
-				'loginNonce'             => wp_create_nonce( 'mbrreg_login_nonce' ),
-				'updateProfileNonce'     => wp_create_nonce( 'mbrreg_update_profile_nonce' ),
-				'setInactiveNonce'       => wp_create_nonce( 'mbrreg_set_inactive_nonce' ),
-				'logoutNonce'            => wp_create_nonce( 'mbrreg_logout_nonce' ),
-				'addMemberNonce'         => wp_create_nonce( 'mbrreg_add_member_nonce' ),
-				'processing'             => __( 'Processing...', 'member-registration-plugin' ),
-				'confirmDeactivate'      => __( 'Are you sure you want to deactivate this membership? If this is your only active membership, you will be logged out.', 'member-registration-plugin' ),
-				'confirmDeactivateTitle' => __( 'Deactivate Membership', 'member-registration-plugin' ),
-				'confirmLogout'          => __( 'Are you sure you want to log out?', 'member-registration-plugin' ),
-				'confirmLogoutTitle'     => __( 'Log Out', 'member-registration-plugin' ),
-				'passwordMismatch'       => __( 'Passwords do not match.', 'member-registration-plugin' ),
-				'errorGeneral'           => __( 'An error occurred. Please try again.', 'member-registration-plugin' ),
-				'errorTitle'             => __( 'Error', 'member-registration-plugin' ),
-				'successTitle'           => __( 'Success', 'member-registration-plugin' ),
+				'ajaxUrl' => admin_url('admin-ajax.php'),
+				'registerNonce' => wp_create_nonce('mbrreg_register_nonce'),
+				'loginNonce' => wp_create_nonce('mbrreg_login_nonce'),
+				'updateProfileNonce' => wp_create_nonce('mbrreg_update_profile_nonce'),
+				'setInactiveNonce' => wp_create_nonce('mbrreg_set_inactive_nonce'),
+				'logoutNonce' => wp_create_nonce('mbrreg_logout_nonce'),
+				'addMemberNonce' => wp_create_nonce('mbrreg_add_member_nonce'),
+				'processing' => __('Processing...', 'member-registration-plugin'),
+				'confirmDeactivate' => __('Are you sure you want to deactivate this membership? If this is your only active membership, you will be logged out.', 'member-registration-plugin'),
+				'confirmDeactivateTitle' => __('Deactivate Membership', 'member-registration-plugin'),
+				'confirmLogout' => __('Are you sure you want to log out?', 'member-registration-plugin'),
+				'confirmLogoutTitle' => __('Log Out', 'member-registration-plugin'),
+				'passwordMismatch' => __('Passwords do not match.', 'member-registration-plugin'),
+				'errorGeneral' => __('An error occurred. Please try again.', 'member-registration-plugin'),
+				'errorTitle' => __('Error', 'member-registration-plugin'),
+				'successTitle' => __('Success', 'member-registration-plugin'),
 			)
 		);
 	}
@@ -102,33 +106,35 @@ class Mbrreg_Public {
 	 * @since 1.0.0
 	 * @return void
 	 */
-	public function handle_activation() {
-		if ( ! isset( $_GET['mbrreg_action'] ) || 'activate' !== $_GET['mbrreg_action'] ) {
+	public function handle_activation()
+	{
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if (!isset($_GET['mbrreg_action']) || 'activate' !== $_GET['mbrreg_action']) {
 			return;
 		}
 
-		$key = isset( $_GET['key'] ) ? sanitize_text_field( wp_unslash( $_GET['key'] ) ) : '';
+		$key = isset($_GET['key']) ? sanitize_text_field(wp_unslash($_GET['key'])) : '';
 
-		if ( empty( $key ) ) {
+		if (empty($key)) {
 			return;
 		}
 
-		$result = $this->member->activate( $key );
+		$result = $this->member->activate($key);
 
-		if ( is_wp_error( $result ) ) {
+		if (is_wp_error($result)) {
 			// Store error message.
-			set_transient( 'mbrreg_activation_error', $result->get_error_message(), 60 );
+			set_transient('mbrreg_activation_error', $result->get_error_message(), 60);
 		} else {
 			// Store success message.
-			set_transient( 'mbrreg_activation_success', __( 'Your account has been activated! You can now log in.', 'member-registration-plugin' ), 60 );
+			set_transient('mbrreg_activation_success', __('Your account has been activated! You can now log in.', 'member-registration-plugin'), 60);
 		}
 
 		// Redirect to remove query params.
-		$redirect_url = get_option( 'mbrreg_registration_page_id' )
-			? get_permalink( get_option( 'mbrreg_registration_page_id' ) )
-			: home_url( '/' );
+		$redirect_url = get_option('mbrreg_registration_page_id')
+			? get_permalink(get_option('mbrreg_registration_page_id'))
+			: home_url('/');
 
-		wp_safe_redirect( $redirect_url );
+		wp_safe_redirect($redirect_url);
 		exit;
 	}
 }

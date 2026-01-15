@@ -129,6 +129,7 @@ class Mbrreg_Ajax
 		foreach ($custom_fields as $field) {
 			$field_key = 'custom_' . $field->id;
 			if (isset($_POST[$field_key])) {
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 				$data[$field_key] = $this->custom_fields->sanitize_field_value($field, wp_unslash($_POST[$field_key]));
 			}
 		}
@@ -223,7 +224,7 @@ class Mbrreg_Ajax
 
 		$username = isset($_POST['username']) ? sanitize_user(wp_unslash($_POST['username'])) : '';
 		$password = isset($_POST['password']) ? $_POST['password'] : ''; // phpcs:ignore
-		$remember = isset($_POST['remember']) && $_POST['remember'];
+		$remember = isset($_POST['remember']) && sanitize_text_field(wp_unslash($_POST['remember']));
 
 		if (empty($username) || empty($password)) {
 			wp_send_json_error(array('message' => __('Please enter your username and password.', 'member-registration-plugin')));
@@ -507,7 +508,7 @@ class Mbrreg_Ajax
 		}
 
 		$member_id = isset($_POST['member_id']) ? absint($_POST['member_id']) : 0;
-		$delete_wp_user = isset($_POST['delete_wp_user']) && $_POST['delete_wp_user'];
+		$delete_wp_user = isset($_POST['delete_wp_user']) && sanitize_text_field(wp_unslash($_POST['delete_wp_user']));
 
 		if (!$member_id) {
 			wp_send_json_error(array('message' => __('Invalid member ID.', 'member-registration-plugin')));
@@ -760,6 +761,7 @@ class Mbrreg_Ajax
 		}
 
 		// Check if file was uploaded.
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 		if (!isset($_FILES['csv_file']) || !is_uploaded_file($_FILES['csv_file']['tmp_name'])) {
 			wp_send_json_error(array('message' => __('Please select a CSV file to upload.', 'member-registration-plugin')));
 		}

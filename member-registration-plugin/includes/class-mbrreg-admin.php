@@ -259,6 +259,7 @@ class Mbrreg_Admin
 	public function render_members_page()
 	{
 		// Check if editing a member.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if (isset($_GET['action']) && 'edit' === $_GET['action'] && isset($_GET['member_id'])) {
 			$this->render_member_edit_page();
 			return;

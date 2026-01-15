@@ -182,6 +182,7 @@ class Mbrreg_Activator
 		// Check if old columns exist and migrate data to custom fields.
 		if (version_compare($current_version, '1.2.0', '<')) {
 			// Check if the old columns exist.
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 			$columns = $wpdb->get_col("DESCRIBE {$table_members}", 0);
 
 			$old_fields = array('address', 'telephone', 'date_of_birth', 'place_of_birth');
@@ -235,6 +236,7 @@ class Mbrreg_Activator
 			// Check if custom field already exists.
 			$existing = $wpdb->get_var(
 				$wpdb->prepare(
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					"SELECT id FROM {$table_custom_fields} WHERE field_name = %s",
 					$field_name
 				)
@@ -265,6 +267,7 @@ class Mbrreg_Activator
 				// Migrate existing data.
 				$escaped_field_name = esc_sql($field_name);
 				$members = $wpdb->get_results(
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 					"SELECT id, {$escaped_field_name} FROM {$table_members} WHERE {$escaped_field_name} IS NOT NULL AND {$escaped_field_name} != ''"
 				);
 

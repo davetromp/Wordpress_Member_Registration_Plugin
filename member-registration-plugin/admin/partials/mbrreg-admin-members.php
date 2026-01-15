@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 /**
  * Admin members list page template.
  *
@@ -107,7 +108,8 @@ $count_pending = $member_handler->count(array('status' => 'pending', 'search' =>
 					<option value="delete"><?php esc_html_e('Delete Members', 'member-registration-plugin'); ?>
 					</option>
 					<option value="delete_with_user">
-						<?php esc_html_e('Delete Members + Users', 'member-registration-plugin'); ?></option>
+						<?php esc_html_e('Delete Members + Users', 'member-registration-plugin'); ?>
+					</option>
 				</select>
 				<button type="button"
 					class="button mbrreg-bulk-action-btn"><?php esc_html_e('Apply', 'member-registration-plugin'); ?></button>
@@ -155,13 +157,15 @@ $count_pending = $member_handler->count(array('status' => 'pending', 'search' =>
 					<th scope="col" class="manage-column"><?php esc_html_e('Email', 'member-registration-plugin'); ?>
 					</th>
 					<th scope="col" class="manage-column">
-						<?php esc_html_e('Account Owner', 'member-registration-plugin'); ?></th>
+						<?php esc_html_e('Account Owner', 'member-registration-plugin'); ?>
+					</th>
 					<th scope="col" class="manage-column"><?php esc_html_e('Status', 'member-registration-plugin'); ?>
 					</th>
 					<th scope="col" class="manage-column"><?php esc_html_e('Admin', 'member-registration-plugin'); ?>
 					</th>
 					<th scope="col" class="manage-column">
-						<?php esc_html_e('Registered', 'member-registration-plugin'); ?></th>
+						<?php esc_html_e('Registered', 'member-registration-plugin'); ?>
+					</th>
 				</tr>
 			</thead>
 			<tbody>

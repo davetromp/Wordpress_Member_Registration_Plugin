@@ -197,6 +197,7 @@ class Mbrreg_Database
 	public function get_member($member_id)
 	{
 		$sql = $this->wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			"SELECT * FROM {$this->get_members_table()} WHERE id = %d",
 			$member_id
 		);
@@ -215,6 +216,7 @@ class Mbrreg_Database
 	public function get_member_by_user_id($user_id)
 	{
 		$sql = $this->wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			"SELECT * FROM {$this->get_members_table()} WHERE user_id = %d ORDER BY id ASC LIMIT 1",
 			$user_id
 		);
@@ -233,6 +235,7 @@ class Mbrreg_Database
 	public function get_members_by_user_id($user_id)
 	{
 		$sql = $this->wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			"SELECT * FROM {$this->get_members_table()} WHERE user_id = %d ORDER BY id ASC",
 			$user_id
 		);
@@ -252,6 +255,7 @@ class Mbrreg_Database
 	public function count_members_by_user_id($user_id, $status = '')
 	{
 		$sql = $this->wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			"SELECT COUNT(*) FROM {$this->get_members_table()} WHERE user_id = %d",
 			$user_id
 		);
@@ -273,6 +277,7 @@ class Mbrreg_Database
 	public function get_member_by_activation_key($activation_key)
 	{
 		$sql = $this->wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			"SELECT * FROM {$this->get_members_table()} WHERE activation_key = %s",
 			$activation_key
 		);
@@ -478,6 +483,7 @@ class Mbrreg_Database
 	{
 		if (null !== $field_id) {
 			$sql = $this->wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				"SELECT meta_value FROM {$this->get_member_meta_table()} WHERE member_id = %d AND field_id = %d",
 				$member_id,
 				$field_id
@@ -488,6 +494,7 @@ class Mbrreg_Database
 		}
 
 		$sql = $this->wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			"SELECT field_id, meta_value FROM {$this->get_member_meta_table()} WHERE member_id = %d",
 			$member_id
 		);
@@ -621,6 +628,7 @@ class Mbrreg_Database
 	public function get_custom_field($field_id)
 	{
 		$sql = $this->wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			"SELECT * FROM {$this->get_custom_fields_table()} WHERE id = %d",
 			$field_id
 		);

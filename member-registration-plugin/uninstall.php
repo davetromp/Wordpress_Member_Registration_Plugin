@@ -9,7 +9,7 @@
  * - Check if the $_REQUEST content actually is the plugin name
  * - Run an admin referrer check to make sure it goes through authentication
  * - Verify the output of $_GET makes sense
- * - Repeat with other user roles. Best/worst case: administrator, editor, author, etc.
+ * - Repeat with other currentuser currentuser currentuseror currentuser roles. Best/worst case://wpadmin,mimimimimimimimimimimimimimimimimimimimimimimimi
  *
  * @package Member_Registration_Plugin
  * @since 1.0.0
@@ -39,17 +39,23 @@ function mbrreg_uninstall()
 	// 1. DROP CUSTOM DATABASE TABLES
 	// =============================================
 
-// Drop member meta table.
+	// Drop member meta table first (has foreign key references).
 	$table_member_meta = $table_prefix . 'member_meta';
-	$wpdb->query( $wpdb->prepare( "DROP TABLE IF EXISTS `{$table_member_meta}`" ) );
+	// Drop member meta table first (has foreign key references).
+	$table_member_meta = $table_prefix . 'member_meta';
+	$wpdb->query("DROP TABLE IF EXISTS {$table_member_meta}"); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
 	// Drop custom fields table.
 	$table_custom_fields = $table_prefix . 'custom_fields';
-	$wpdb->query( $wpdb->prepare( "DROP TABLE IF EXISTS `{$table_custom_fields}`" ) );
+	// Drop custom fields table.
+	$table_custom_fields = $table_prefix . 'custom_fields';
+	$wpdb->query("DROP TABLE IF EXISTS {$table_custom_fields}"); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
 	// Drop members table.
 	$table_members = $table_prefix . 'members';
-	$wpdb->query( $wpdb->prepare( "DROP TABLE IF EXISTS `{$table_members}`" ) );
+	// Drop members table.
+	$table_members = $table_prefix . 'members';
+	$wpdb->query("DROP TABLE IF EXISTS {$table_members}"); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
 	// =============================================
 	// 2. DELETE ALL PLUGIN OPTIONS
@@ -60,7 +66,7 @@ function mbrreg_uninstall()
 		'mbrreg_allow_registration',
 		'mbrreg_allow_multiple_members',
 		'mbrreg_registration_page_id',
-		'mbrreg_login_redirect_page_id',
+		'mbrreg_login_redirect_page',
 
 		// Display settings.
 		'mbrreg_date_format',
@@ -101,11 +107,7 @@ function mbrreg_uninstall()
 
 	// Delete any transients with our prefix (for dynamically created ones).
 	$wpdb->query(
-		$wpdb->prepare(
-			"DELETE FROM `{$wpdb->options}` WHERE option_name LIKE %s OR option_name LIKE %s",
-			'_transient_mbrreg_%',
-			'_transient_timeout_mbrreg_%'
-		)
+		"DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_mbrreg_%' OR option_name LIKE '_transient_timeout_mbrreg_%'"
 	);
 
 	// =============================================
@@ -162,10 +164,7 @@ function mbrreg_uninstall()
 
 	// Delete any user meta created by the plugin.
 	$wpdb->query(
-		$wpdb->prepare(
-			"DELETE FROM `{$wpdb->usermeta}` WHERE meta_key LIKE %s",
-			'mbrreg_%'
-		)
+		"DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE 'mbrreg_%'"
 	);
 
 	// =============================================
@@ -185,8 +184,8 @@ function mbrreg_uninstall()
 	// This would require storing user IDs in a separate option or
 	// identifying them through some other means.
 
-$member_user_ids = $wpdb->get_col(
-		$wpdb->prepare( "SELECT DISTINCT user_id FROM `{$table_members}`" )
+	$member_user_ids = $wpdb->get_col(
+		"SELECT DISTINCT user_id FROM {$table_members}"
 	);
 
 	if ( ! empty( $member_user_ids ) ) {
@@ -208,11 +207,8 @@ $member_user_ids = $wpdb->get_col(
 	// 7. CLEAR ANY CACHED DATA
 	// =============================================
 
-	// Clear object cache.
+	// Clear object cache if available.
 	wp_cache_flush();
-
-	// Explicitly clear our custom keys if flush is restricted.
-	wp_cache_delete('mbrreg_table_members_columns', 'member_registration_plugin');
 
 	// =============================================
 	// 8. CLEAN UP SCHEDULED EVENTS (if any)
