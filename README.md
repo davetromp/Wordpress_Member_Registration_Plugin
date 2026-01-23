@@ -32,6 +32,7 @@ This project was developed collaboratively with Claude (Anthropic's AI assistant
 
 4. **Documentation**: All code was documented with inline comments and this README was created.
 
+
 ### Development Approach
 
 The AI assistant provided:
@@ -42,6 +43,28 @@ The AI assistant provided:
 - Translation-ready strings and Dutch translation file
 
 All code was reviewed and tested by the human developer before implementation.
+
+## 📸 Screenshots
+
+### Frontend
+
+| Registration Form | Login Form |
+|-------------------|------------|
+| ![Registration](screenshots/Screenshot-register.png) | ![Login](screenshots/Screenshot-login.png) |
+
+| Member Dashboard | Member Details |
+|------------------|----------------|
+| ![Dashboard](screenshots/Screenshot-member-profile.png) | ![Member Details](screenshots/Screenshot-member-john.png) |
+
+### Admin Interface
+
+| Members List | Custom Fields |
+|--------------|---------------|
+| ![Members List](screenshots/Screenshot-members.png) | ![Custom Fields](screenshots/Screenshot-custom-fields.png) |
+
+| Settings | Import / Export |
+|----------|-----------------|
+| ![Settings](screenshots/Screenshot-settings1.png) | ![Import Export](screenshots/Screenshot-Import-Export.png) |
 
 ## 📁 File Structure
 ```
